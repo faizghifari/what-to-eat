@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  menu-service:
+    build:
+      context: ./services/menu-service
+    ports:
+      - "3001:3000"
+    networks:
+      - what-to-eat-network
+
+  user-service:
+    build:
+      context: ./services/user-service
+    ports:
+      - "3002:3000"
+    networks:
+      - what-to-eat-network
+
+  order-service:
+    build:
+      context: ./services/order-service
+    ports:
+      - "3003:3000"
+    networks:
+      - what-to-eat-network
+
+  recipe-recommendation:
+    build:
+      context: ./services/recipe-recommendation
+    ports:
+      - "5001:5000"
+    networks:
+      - what-to-eat-network
+
+  menu-recommendation:
+    build:
+      context: ./services/menu-recommendation
+    ports:
+      - "5002:5000"
+    networks:
+      - what-to-eat-network
+
+  eat-together:
+    build:
+      context: ./services/eat-together
+    ports:
+      - "5003:5000"
+    networks:
+      - what-to-eat-network
+
+  profile:
+    build:
+      context: ./services/profile
+    ports:
+      - "5004:5000"
+    networks:
+      - what-to-eat-network
+
+  user-interface:
+    build:
+      context: ./services/user-interface
+    ports:
+      - "3000:3000"
+    networks:
+      - what-to-eat-network
+
+networks:
+  what-to-eat-network:
+    driver: bridge

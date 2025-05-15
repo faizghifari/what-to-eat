@@ -1,4 +1,4 @@
-# What to Eat Microservices Project
+# What to Eat Project
 
 The "What to Eat" project is designed using a microservices architecture. Each service is developed and deployed independently, and can be implemented in any language. Services communicate via REST APIs and are containerized using Docker for easy deployment and scalability.
 
@@ -11,9 +11,9 @@ This project consists of the following microservices:
 3. **Eat Together**: Manages group eating sessions and coordination.
 4. **Profile**: Manages user profiles.
 5. **User Interface**: The frontend for the application.
-6. **Menu Service** (Node.js): Manages menu items and related operations.
-7. **User Service** (Node.js): Handles user-related functionalities such as registration and authentication.
-8. **Order Service** (Node.js): Manages order processing and tracking.
+6. **Menu Service**: Manages menu items and related operations.
+7. **User Service**: Handles user-related functionalities such as registration and authentication.
+8. **Order Service**: Manages order processing and tracking.
 
 ## Project Structure
 

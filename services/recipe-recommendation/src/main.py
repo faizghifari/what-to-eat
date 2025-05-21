@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional, Any
 import os
 from dotenv import load_dotenv
@@ -11,7 +11,6 @@ from supabase import create_client, Client
 load_dotenv()
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-PROFILE_SERVICE_URL = os.getenv("PROFILE_SERVICE_URL", "http://profile:5004/profile/")
 GOOGLE_GENAI_MODEL = os.getenv("GOOGLE_GENAI_MODEL", "gemini-2.0-flash")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
@@ -29,21 +28,52 @@ class Recipe(BaseModel):
     estimated_time: str
     image_url: str
 
+class RecipeUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    ingredients: Optional[Any] = None
+    tools: Optional[Any] = None
+    instructions: Optional[Any] = None
+    estimated_price: Optional[float] = None
+    estimated_time: Optional[str] = None
+    image_url: Optional[str] = None
+
 # --- Utility Functions ---
 def get_user_profile(user_id: str) -> dict:
-    profile_url = f"{PROFILE_SERVICE_URL}{user_id}"
+    # Fetch user profile directly from Supabase DB
     try:
-        resp = httpx.get(profile_url, timeout=5)
-        resp.raise_for_status()
-        return resp.json()
-    except Exception:
-        raise HTTPException(status_code=502, detail="Failed to fetch user profile")
+        res = supabase.table("Profile").select("*").eq("id", user_id).single().execute()
+        if not res.data:
+            raise HTTPException(status_code=404, detail="User profile not found")
+        return res.data
+    except Exception as e:
+        detail = getattr(e, 'message', str(e))
+        if hasattr(e, 'args') and e.args and isinstance(e.args[0], dict):
+            err = e.args[0]
+            detail = err.get('message', str(e))
+        raise HTTPException(status_code=502, detail=f"Failed to fetch user profile: {detail}")
+
+def extract_keys(json_obj):
+    if isinstance(json_obj, dict):
+        return set(json_obj.keys())
+    return set(json_obj or [])
 
 def filter_recipes(recipes, restrictions, available_tools, available_ingredients):
     filtered = []
     for r in recipes:
-        recipe_ingredients = set(r["ingredients"])
-        recipe_tools = set(r["tools"])
+        # Flatten list of dicts to set of keys for ingredients and tools
+        recipe_ingredients = set()
+        for item in r["ingredients"]:
+            if isinstance(item, dict):
+                recipe_ingredients.update(item.keys())
+            else:
+                recipe_ingredients.add(str(item))
+        recipe_tools = set()
+        for item in r["tools"]:
+            if isinstance(item, dict):
+                recipe_tools.update(item.keys())
+            else:
+                recipe_tools.add(str(item))
         if restrictions & recipe_ingredients:
             continue
         if not recipe_tools <= available_tools:
@@ -56,47 +86,91 @@ def filter_recipes(recipes, restrictions, available_tools, available_ingredients
 # --- CRUD Endpoints ---
 @app.post("/recipe/", response_model=Recipe)
 def create_recipe(recipe: Recipe):
-    data = recipe.dict(exclude_unset=True)
-    res = supabase.table("recipe").insert(data).execute()
-    if res.error:
-        raise HTTPException(status_code=400, detail=res.error.message)
-    return res.data[0]
+    data = recipe.model_dump(exclude_unset=True)
+    try:
+        res = supabase.table("Recipe").insert(data).execute()
+        if not res.data or (isinstance(res.data, list) and len(res.data) == 0):
+            raise HTTPException(status_code=400, detail="Failed to create recipe")
+        return res.data[0]
+    except Exception as e:
+        detail = getattr(e, 'message', str(e))
+        # Try to extract supabase error message if present
+        if hasattr(e, 'args') and e.args and isinstance(e.args[0], dict):
+            err = e.args[0]
+            detail = err.get('message', str(e))
+        raise HTTPException(status_code=400, detail=f"Supabase error: {detail}")
 
 @app.get("/recipe/", response_model=List[Recipe])
 def list_recipes():
-    res = supabase.table("recipe").select("*").execute()
-    return res.data
+    try:
+        res = supabase.table("Recipe").select("*").execute()
+        if res.data is None:
+            raise HTTPException(status_code=400, detail="Failed to list recipes")
+        return res.data
+    except Exception as e:
+        detail = getattr(e, 'message', str(e))
+        if hasattr(e, 'args') and e.args and isinstance(e.args[0], dict):
+            err = e.args[0]
+            detail = err.get('message', str(e))
+        raise HTTPException(status_code=400, detail=f"Supabase error: {detail}")
 
 @app.get("/recipe/{recipe_id}", response_model=Recipe)
 def get_recipe(recipe_id: int):
-    res = supabase.table("recipe").select("*").eq("id", recipe_id).single().execute()
-    if not res.data:
-        raise HTTPException(status_code=404, detail="Recipe not found")
-    return res.data
+    try:
+        res = supabase.table("Recipe").select("*").eq("id", recipe_id).single().execute()
+        if not res.data:
+            raise HTTPException(status_code=404, detail="Recipe not found")
+        return res.data
+    except Exception as e:
+        # Check for Supabase 'no rows' error
+        err_msg = str(getattr(e, 'args', [''])[0])
+        if 'PGRST116' in err_msg or 'no rows' in err_msg or 'multiple (or no) rows returned' in err_msg:
+            raise HTTPException(status_code=404, detail="Recipe not found")
+        detail = getattr(e, 'message', str(e))
+        if hasattr(e, 'args') and e.args and isinstance(e.args[0], dict):
+            err = e.args[0]
+            detail = err.get('message', str(e))
+        raise HTTPException(status_code=400, detail=f"Supabase error: {detail}")
 
 @app.put("/recipe/{recipe_id}", response_model=Recipe)
-def update_recipe(recipe_id: int, recipe: Recipe):
-    data = recipe.dict(exclude_unset=True)
-    res = supabase.table("recipe").update(data).eq("id", recipe_id).execute()
-    if res.error:
-        raise HTTPException(status_code=400, detail=res.error.message)
-    return res.data[0]
+def update_recipe(recipe_id: int, recipe: RecipeUpdate):
+    data = recipe.model_dump(exclude_unset=True)
+    try:
+        res = supabase.table("Recipe").update(data).eq("id", recipe_id).execute()
+        if not res.data or (isinstance(res.data, list) and len(res.data) == 0):
+            raise HTTPException(status_code=400, detail="Failed to update recipe")
+        return res.data[0]
+    except Exception as e:
+        detail = getattr(e, 'message', str(e))
+        if hasattr(e, 'args') and e.args and isinstance(e.args[0], dict):
+            err = e.args[0]
+            detail = err.get('message', str(e))
+        raise HTTPException(status_code=400, detail=f"Supabase error: {detail}")
 
 @app.delete("/recipe/{recipe_id}")
 def delete_recipe(recipe_id: int):
-    res = supabase.table("recipe").delete().eq("id", recipe_id).execute()
-    if res.error:
-        raise HTTPException(status_code=400, detail=res.error.message)
-    return {"message": "Recipe deleted"}
+    try:
+        res = supabase.table("Recipe").delete().eq("id", recipe_id).execute()
+        if not res.data:
+            raise HTTPException(status_code=404, detail="Recipe not found")
+        return {"message": "Recipe deleted"}
+    except HTTPException:
+        raise  # Re-raise HTTPException as is
+    except Exception as e:
+        detail = getattr(e, 'message', str(e))
+        if hasattr(e, 'args') and e.args and isinstance(e.args[0], dict):
+            err = e.args[0]
+            detail = err.get('message', str(e))
+        raise HTTPException(status_code=400, detail=f"Supabase error: {detail}")
 
 # --- Recommendation Endpoints ---
 @app.post("/recipe/recommend_recipes")
 def recommend_recipes(user_id: str):
     profile = get_user_profile(user_id)
-    restrictions = set(profile.get("restrictions", []))
-    available_tools = set(profile.get("tools", []))
-    available_ingredients = set(profile.get("ingredients", []))
-    res = supabase.table("recipe").select("*").execute()
+    restrictions = extract_keys(profile.get("dietary_restrictions", {}))
+    available_tools = extract_keys(profile.get("available_tools", {}))
+    available_ingredients = extract_keys(profile.get("available_ingredients", {}))
+    res = supabase.table("Recipe").select("*").execute()
     filtered = filter_recipes(res.data, restrictions, available_tools, available_ingredients)
     if not filtered:
         return JSONResponse(status_code=200, content={"message": "No recipes found. Search the internet?", "results": []})
@@ -105,12 +179,13 @@ def recommend_recipes(user_id: str):
 @app.post("/recipe/recommend_recipes_search")
 def recommend_recipes_search(user_id: str):
     profile = get_user_profile(user_id)
-    restrictions = profile.get("restrictions", [])
-    available_tools = profile.get("tools", [])
-    available_ingredients = profile.get("ingredients", [])
+    restrictions = extract_keys(profile.get("dietary_restrictions", {}))
+    available_tools = extract_keys(profile.get("available_tools", {}))
+    available_ingredients = extract_keys(profile.get("available_ingredients", {}))
     prompt = (
-        f"Find recipes that do not contain: {restrictions}, "
-        f"and can be made with tools: {available_tools} and ingredients: {available_ingredients}. "
+        f"Use a web search to find recipes that do not contain: {list(restrictions)}, "
+        f"and can be made with tools: {list(available_tools)} and ingredients: {list(available_ingredients)}. "
+        "Explicitly search the web for recipes. "
         "Return results as JSON with fields: name, description, ingredients, tools, instructions, estimated_price, estimated_time, image_url."
     )
     from google import genai
@@ -150,7 +225,7 @@ def recommend_recipes_search(user_id: str):
     # Bulk insert if any
     if recipes_to_store:
         try:
-            supabase.table("recipe").insert(recipes_to_store).execute()
+            supabase.table("Recipe").insert(recipes_to_store).execute()
             stored = recipes_to_store
         except Exception:
             pass
@@ -158,5 +233,5 @@ def recommend_recipes_search(user_id: str):
     return {
         "results": results,
         "stored": stored,
-        "grounding": response.candidates[0].grounding_metadata.search_entry_point.rendered_content
+        "grounding": getattr(getattr(response.candidates[0], "grounding_metadata", None), "search_entry_point", None) and getattr(response.candidates[0].grounding_metadata.search_entry_point, "rendered_content", None)
     }

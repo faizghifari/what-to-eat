@@ -17,3 +17,6 @@ Thumbs.db
 
 # Byte-compiled / cache / logs
 *.log
+
+# Coverage
+.coverage

@@ -5,8 +5,9 @@ from fastapi.testclient import TestClient
 from unittest.mock import patch
 
 # Add src to sys.path for import
-sys.path.append(os.path.join(os.path.dirname(__file__), '../src'))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
 from main import app
+from utils import get_user_profile
 
 client = TestClient(app)
 
@@ -163,7 +164,6 @@ def test_delete_recipe_not_found():
 
 
 def test_get_user_profile_not_found(monkeypatch):
-    from main import get_user_profile
     # Patch supabase.table to return no data
     class DummyRes:
         data = None
@@ -184,7 +184,6 @@ def test_get_user_profile_not_found(monkeypatch):
 
 
 def test_get_user_profile_supabase_error(monkeypatch):
-    from main import get_user_profile
     class DummyTable:
         def select(self, *a, **k):
             return self
@@ -196,6 +195,7 @@ def test_get_user_profile_supabase_error(monkeypatch):
             raise Exception({"message": "Simulated supabase error"})
     from main import supabase
     monkeypatch.setattr(supabase, "table", lambda name: DummyTable())
+    from utils import get_user_profile
     with pytest.raises(Exception) as exc:
         get_user_profile("99999999")
     assert "Simulated supabase error" in str(exc.value)

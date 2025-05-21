@@ -11,9 +11,11 @@ from supabase import create_client, Client
 load_dotenv()
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+PROFILE_SERVICE_URL = os.getenv("PROFILE_SERVICE_URL", "http://profile:5004/profile/")
+GOOGLE_GENAI_MODEL = os.getenv("GOOGLE_GENAI_MODEL", "gemini-2.0-flash")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-app = FastAPI(title="Menu Recommendation Service")
+app = FastAPI(title="Recipe Recommendation Service")
 
 # --- Models ---
 class Recipe(BaseModel):
@@ -29,7 +31,7 @@ class Recipe(BaseModel):
 
 # --- Utility Functions ---
 def get_user_profile(user_id: str) -> dict:
-    profile_url = f"http://profile:5004/profile/{user_id}"
+    profile_url = f"{PROFILE_SERVICE_URL}{user_id}"
     try:
         resp = httpx.get(profile_url, timeout=5)
         resp.raise_for_status()
@@ -114,7 +116,7 @@ def recommend_recipes_search(user_id: str):
     from google import genai
     from google.genai.types import Tool, GenerateContentConfig, GoogleSearch
     client = genai.Client()
-    model_id = "gemini-2.0-flash"
+    model_id = GOOGLE_GENAI_MODEL
     google_search_tool = Tool(google_search=GoogleSearch())
     response = client.models.generate_content(
         model=model_id,
@@ -125,7 +127,36 @@ def recommend_recipes_search(user_id: str):
         )
     )
     results = [each.text for each in response.candidates[0].content.parts]
+
+    # Try to parse and store recipes to DB (bulk insert)
+    import json
+    stored = []
+    recipes_to_store = []
+    for text in results:
+        try:
+            parsed = json.loads(text)
+            if isinstance(parsed, dict):
+                recipes = [parsed]
+            elif isinstance(parsed, list):
+                recipes = parsed
+            else:
+                continue
+            required = ["name", "description", "ingredients", "tools", "instructions", "estimated_price", "estimated_time", "image_url"]
+            for recipe in recipes:
+                if all(field in recipe for field in required):
+                    recipes_to_store.append(recipe)
+        except Exception:
+            continue
+    # Bulk insert if any
+    if recipes_to_store:
+        try:
+            supabase.table("recipe").insert(recipes_to_store).execute()
+            stored = recipes_to_store
+        except Exception:
+            pass
+
     return {
         "results": results,
+        "stored": stored,
         "grounding": response.candidates[0].grounding_metadata.search_entry_point.rendered_content
     }

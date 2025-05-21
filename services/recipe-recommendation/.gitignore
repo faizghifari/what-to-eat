@@ -16,9 +16,3 @@ Thumbs.db
 
 # Byte-compiled / cache / logs
 *.log
-
-# Node
-node_modules/
-
-# Rust
-/target/

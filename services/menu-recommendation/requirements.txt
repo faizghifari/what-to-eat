@@ -1,0 +1,7 @@
+supabase==2.15.1
+fastapi==0.115.12
+fastapi-cli==0.0.7
+dotenv==1.1.0
+pydantic==2.11.4
+pydantic_core==2.33.2
+python-multipart==0.0.20

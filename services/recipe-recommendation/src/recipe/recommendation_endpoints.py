@@ -1,16 +1,19 @@
+import json
+
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
-from recipe.utils import supabase, get_user_profile, extract_keys, filter_recipes, GOOGLE_GENAI_MODEL
+from recipe.utils import supabase, get_user_profile, extract_names, filter_recipes, GOOGLE_GENAI_MODEL
+from recipe.models import Recipe
 
 router = APIRouter()
 
 @router.post("/recipe/recommend_recipes")
 def recommend_recipes(user_id: str):
     profile = get_user_profile(user_id)
-    restrictions = extract_keys(profile.get("dietary_restrictions", {}))
-    available_tools = extract_keys(profile.get("available_tools", {}))
-    available_ingredients = extract_keys(profile.get("available_ingredients", {}))
+    restrictions = extract_names(profile.get("dietary_restrictions", {}))
+    available_tools = extract_names(profile.get("available_tools", {}))
+    available_ingredients = extract_names(profile.get("available_ingredients", {}))
     res = supabase.table("Recipe").select("*").execute()
     filtered = filter_recipes(res.data, restrictions, available_tools, available_ingredients)
     if not filtered:
@@ -20,15 +23,15 @@ def recommend_recipes(user_id: str):
 @router.post("/recipe/recommend_recipes_search")
 def recommend_recipes_search(user_id: str):
     profile = get_user_profile(user_id)
-    restrictions = extract_keys(profile.get("dietary_restrictions", {}))
-    available_tools = extract_keys(profile.get("available_tools", {}))
-    available_ingredients = extract_keys(profile.get("available_ingredients", {}))
+    restrictions = extract_names(profile.get("dietary_restrictions", {}))
+    available_tools = extract_names(profile.get("available_tools", {}))
+    available_ingredients = extract_names(profile.get("available_ingredients", {}))
     prompt = (
         f"Use a web search to find recipes that do not contain: {list(restrictions)}, "
         f"and can be made with tools: {list(available_tools)} and ingredients: {list(available_ingredients)}. "
         "Explicitly search the web for recipes, the more the better. "
-        "Return results as JSON with these fields and types: "
-        "name (string), description (string), ingredients (array of objects), tools (array of objects), instructions (array of strings), estimated_price (float), estimated_time (string), image_url (string)."
+        "For each recipe, try to find the following fields: "
+        "name, description, ingredients, tools, instructions, estimated_price, estimated_time, image_url. "
     )
     from google import genai
     from google.genai.types import Tool, GenerateContentConfig, GoogleSearch
@@ -43,43 +46,40 @@ def recommend_recipes_search(user_id: str):
             response_modalities=["TEXT"],
         )
     )
-    results = [each.text for each in response.candidates[0].content.parts]
-
-    # Try to parse and store recipes to DB (bulk insert)
-    import json
-    stored = []
-    recipes_to_store = []
-    for text in results:
-        try:
-            parsed = json.loads(text)
-            if isinstance(parsed, dict):
-                recipes = [parsed]
-            elif isinstance(parsed, list):
-                recipes = parsed
-            else:
-                continue
-            required = ["name", "description", "ingredients", "tools", "instructions", "estimated_price", "estimated_time", "image_url"]
-            for recipe in recipes:
-                # Ensure estimated_price is a float
-                if "estimated_price" in recipe and not isinstance(recipe["estimated_price"], float):
-                    try:
-                        recipe["estimated_price"] = float(recipe["estimated_price"])
-                    except Exception:
-                        continue
-                if all(field in recipe for field in required):
-                    recipes_to_store.append(recipe)
-        except Exception:
-            continue
-    # Bulk insert if any
+    recipes = "".join(part.text for part in response.candidates[0].content.parts)
+    
+    prompt_parts = (
+        "Given this web search result, extract the recipes in JSON format:\n"
+        f"{recipes}\n"
+        "Return results as JSON according to the schema. "
+    )
+    response = client.models.generate_content(
+        model=model_id,
+        contents=prompt_parts,
+        config={
+            'response_mime_type': 'application/json',
+            'response_schema': list[Recipe]
+        }
+    )
+    try:
+        recipes_to_store = json.loads(response.candidates[0].content.parts[0].text)
+    except Exception:
+        from json import JSONDecodeError
+        raise JSONDecodeError("Failed to parse JSON", text, 0)
+    
     if recipes_to_store:
         try:
-            supabase.table("Recipe").insert(recipes_to_store).execute()
-            stored = recipes_to_store
+            stored = supabase.table("Recipe").insert(recipes_to_store).execute()
+            if not stored.data or (isinstance(stored.data, list) and len(stored.data) == 0):
+                raise HTTPException(status_code=400, detail="Failed to create gathered recipes")
+            return {
+                "results": stored.data,
+            }
         except Exception:
-            pass
-
-    return {
-        "results": results,
-        "stored": stored,
-        "grounding": getattr(getattr(response.candidates[0], "grounding_metadata", None), "search_entry_point", None) and getattr(response.candidates[0].grounding_metadata.search_entry_point, "rendered_content", None)
-    }
+            detail = getattr(e, 'message', str(e))
+            if hasattr(e, 'args') and e.args and isinstance(e.args[0], dict):
+                err = e.args[0]
+                detail = err.get('message', str(e))
+            raise HTTPException(status_code=400, detail=f"Supabase error: {detail}")
+    else:
+        return JSONResponse(status_code=200, content={"message": "No matched recipes found from the internet", "results": []})

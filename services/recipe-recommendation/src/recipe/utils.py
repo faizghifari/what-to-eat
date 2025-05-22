@@ -26,21 +26,14 @@ def get_user_profile(user_id: str) -> dict:
             detail = err.get('message', str(e))
         raise HTTPException(status_code=502, detail=f"Failed to fetch user profile: {detail}")
 
-def extract_keys(json_obj):
-    return set(json_obj.keys())
+def extract_names(params):
+    return {item["name"] for item in params if "name" in item}
 
 def filter_recipes(recipes, restrictions, available_tools, available_ingredients):
     filtered = []
     for r in recipes:
-        recipe_ingredients = set()
-        for item in r["ingredients"]:
-            if isinstance(item, dict):
-                recipe_ingredients.update(item.keys())
-            else:
-                recipe_ingredients.add(str(item))
-        recipe_tools = set()
-        for item in r["tools"]:
-            recipe_tools.update(item.keys())
+        recipe_ingredients = extract_names(r["ingredients"])
+        recipe_tools = extract_names(r["tools"])
         if restrictions & recipe_ingredients:
             continue
         if not recipe_tools <= available_tools:

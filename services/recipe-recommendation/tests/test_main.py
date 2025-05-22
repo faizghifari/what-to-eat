@@ -6,8 +6,8 @@ from unittest.mock import patch
 
 # Add src to sys.path for import
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
-from main import app
-from utils import get_user_profile
+from recipe.main import app
+from recipe.utils import get_user_profile
 from supabase import create_client, Client
 from dotenv import load_dotenv
 
@@ -38,15 +38,15 @@ def recipe_payload():
         "name": "Test Cake",
         "description": "A test recipe.",
         "ingredients": [
-            {"quinoa": "a gluten-free grain high in protein and fiber."},
-            {"chickpeas": "a legume used in salads, stews, and hummus."}
+            {"name": "quinoa", "description": "a gluten-free grain high in protein and fiber."},
+            {"name": "chickpeas", "description": "a legume used in salads, stews, and hummus."}
         ],
         "tools": [
-            {"oven": "used for baking, roasting, and broiling foods."}
+            {"name": "oven", "description": "used for baking, roasting, and broiling foods."}
         ],
         "instructions": [
-            {"Mix ingredients": "Combine all ingredients thoroughly."},
-            {"Bake": "Place in oven and bake until done."}
+            "Mix ingredients. Combine all ingredients thoroughly.",
+            "Bake. Place in oven and bake until done."
         ],
         "estimated_price": 10.5,
         "estimated_time": "30 min",
@@ -108,11 +108,11 @@ def test_recommend_recipes():
         "name": "Test Cake",
         "description": "A test recipe.",
         "ingredients": [
-            {"quinoa": "a gluten-free grain high in protein and fiber."},
-            {"chickpeas": "a legume used in salads, stews, and hummus."}
+            {"name": "quinoa", "description": "a gluten-free grain high in protein and fiber."},
+            {"name": "chickpeas", "description": "a legume used in salads, stews, and hummus."}
         ],
         "tools": [
-            {"oven": "used for baking, roasting, and broiling foods."}
+            {"name": "oven", "description": "used for baking, roasting, and broiling foods."}
         ],
         "instructions": [
             "Mix ingredients. Combine all ingredients thoroughly.",
@@ -124,7 +124,6 @@ def test_recommend_recipes():
     }
     client.post("/recipe/", json=test_recipe)
     response = client.post("/recipe/recommend_recipes", params={"user_id": os.getenv("SUPABASE_TEST_UUID")})
-    print(response)
     assert response.status_code == 200
     assert "results" in response.json()
     found = any(r["name"] == "Test Cake" for r in response.json()["results"])
@@ -132,18 +131,38 @@ def test_recommend_recipes():
     # Check that filtering works with new profile structure
     for recipe in response.json()["results"]:
         for restricted in ["gluten", "lactose", "soy", "pork", "shellfish", "nuts"]:
-            assert restricted not in recipe["ingredients"]
+            for ingredient in recipe["ingredients"]:
+                assert restricted not in ingredient["name"]
 
 def test_recommend_recipes_search_real():
     # Use real profile from Supabase with id=1
     response = client.post("/recipe/recommend_recipes_search", params={"user_id": os.getenv("SUPABASE_TEST_UUID")})
-    print(response)
     assert response.status_code == 200
     assert "results" in response.json()
-    assert "stored" in response.json()
-    for recipe in response.json()["stored"]:
+    for recipe in response.json()["results"]:
         assert "name" in recipe
+        assert isinstance(recipe["name"], str)
         assert "ingredients" in recipe
+        assert isinstance(recipe["ingredients"], list)
+        for ingredient in recipe["ingredients"]:
+            assert isinstance(ingredient, dict)
+            assert "name" in ingredient
+            assert "description" in ingredient
+        assert "tools" in recipe
+        assert isinstance(recipe["tools"], list)
+        for tool in recipe["tools"]:
+            assert isinstance(tool, dict)
+            assert "name" in tool
+            assert "description" in tool
+        assert "instructions" in recipe
+        assert isinstance(recipe["instructions"], list)
+        for instruction in recipe["instructions"]:
+            assert isinstance(instruction, str)
+        assert "estimated_price" in recipe
+        assert isinstance(recipe["estimated_price"], (float, int))
+        assert "estimated_time" in recipe
+        assert isinstance(recipe["estimated_time"], str)
+        assert "image_url" in recipe
 
 def test_create_recipe_missing_required_field():
     # Should fail because 'name' is required
@@ -159,7 +178,7 @@ def test_create_recipe_missing_required_field():
         "instructions": [
             "Mix ingredients. Combine all ingredients thoroughly.",
             "Bake. Place in oven and bake until done."
-        ]
+        ],
         "estimated_price": 1.0,
         "estimated_time": "10 min",
         "image_url": "http://example.com/img.jpg"
@@ -193,7 +212,7 @@ def test_get_user_profile_not_found(monkeypatch):
             return self
         def execute(self):
             return DummyRes()
-    from utils import supabase
+    from recipe.utils import supabase
     monkeypatch.setattr(supabase, "table", lambda name: DummyTable())
     with pytest.raises(Exception) as exc:
         get_user_profile("99999999")
@@ -210,9 +229,21 @@ def test_get_user_profile_supabase_error(monkeypatch):
             return self
         def execute(self):
             raise Exception({"message": "Simulated supabase error"})
-    from utils import supabase
+    from recipe.utils import supabase
     monkeypatch.setattr(supabase, "table", lambda name: DummyTable())
-    from utils import get_user_profile
+    from recipe.utils import get_user_profile
     with pytest.raises(Exception) as exc:
         get_user_profile("99999999")
     assert "Simulated supabase error" in str(exc.value)
+
+def test_recommend_recipes_no_match(monkeypatch):
+    # Patch filter_recipes to always return an empty list
+    from recipe import recommendation_endpoints
+    monkeypatch.setattr(recommendation_endpoints, "filter_recipes", lambda *a, **k: [])
+    response = client.post("/recipe/recommend_recipes", params={"user_id": os.getenv("SUPABASE_TEST_UUID")})
+    assert response.status_code == 200
+    data = response.json()
+    assert "results" in data
+    assert data["results"] == []
+    assert "message" in data
+    assert data["message"].startswith("No recipes found")

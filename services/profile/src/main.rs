@@ -3,8 +3,12 @@
 
 mod interfaces;
 
+use std::collections::HashMap;
+
 use supabase_rs::{SupabaseClient, errors::ErrorTypes as SupabaseError};
 use tokio::net::{TcpListener, TcpStream};
+
+const LOCALHOST: std::net::Ipv6Addr = std::net::Ipv6Addr::LOCALHOST;
 
 enum LocalPorts {
     RecipeRecommend = 5001,
@@ -76,28 +80,28 @@ fn create_supabase_client() -> Result<SupabaseClient, SupabaseError> {
     }
 }
 
-async fn profile_runner(_client: &SupabaseClient) {
+async fn profile_runner(client: &SupabaseClient) {
     use std::net::Ipv6Addr;
 
     // Listen for calls to Profile service socket
-    const PROFILE_SOCKET: (Ipv6Addr, u16) = (Ipv6Addr::LOCALHOST, 5004);
+    const PROFILE_SOCKET: (Ipv6Addr, u16) = (LOCALHOST, 5004);
     if let Ok(listener) = TcpListener::bind(PROFILE_SOCKET).await {
         log::debug!("[PROFILE] Bound to socket successfully!");
-        manage_listener(&listener).await;
+        manage_listener(&listener, client).await;
     } else {
         log::error!("[PROFILE] Failed to bind to socket.");
     }
 }
 
-async fn manage_listener(listener: &TcpListener) {
-    if let Err(e) = process_requests(listener).await {
+async fn manage_listener(listener: &TcpListener, client: &SupabaseClient) {
+    if let Err(e) = process_requests(listener, client).await {
         log::warn!("[PROFILE] Error encountered when processing Profile service request: {e:#?}");
         // Have to box the new async function to avoid an infinite size Future
-        Box::pin(manage_listener(listener)).await;
+        Box::pin(manage_listener(listener, client)).await;
     }
 }
 
-async fn process_requests(listener: &TcpListener) -> std::io::Result<()> {
+async fn process_requests(listener: &TcpListener, client: &SupabaseClient) -> std::io::Result<()> {
     use std::net::SocketAddr;
     log::debug!("[PROFILE] Listening for incoming requests...");
     loop {
@@ -150,37 +154,63 @@ async fn process_requests(listener: &TcpListener) -> std::io::Result<()> {
             .parse::<isize>()
             .unwrap_or(-1);
 
-        let user_id: u32 = split_message
+        let user_id: &str = split_message
             .next()
-            .unwrap_or("0")
-            .parse::<u32>()
-            .unwrap_or(0);
+            .unwrap_or("00000000-0000-0000-0000-000000000000");
 
         if origin_address.ip() == listener.local_addr()?.ip() {
             // Match request call from other services
+            let mut get_single_attribute: bool = false;
+            let mut attribute: &[ProfileAttribute] = &[ProfileAttribute::Unknown];
             match request_code {
                 request if request == RequestCodes::GetProfile as isize => {
                     log::debug!("[PROFILE] Received GetProfile request");
+                    if let Err(e) = fetch_profile(user_id, client).await {
+                        log::error!("[PROFILE] Failed to fetch profile:\n{e}");
+                    }
                 }
                 request if request == RequestCodes::GetPreferences as isize => {
                     log::debug!("[PROFILE] Received GetPreferences request");
+                    attribute = &[ProfileAttribute::Preferences];
+                    get_single_attribute = true;
                 }
                 request if request == RequestCodes::GetRestrictions as isize => {
                     log::debug!("[PROFILE] Received GetRestrictions request");
+                    attribute = &[ProfileAttribute::Restrictions];
+                    get_single_attribute = true;
                 }
                 request if request == RequestCodes::GetTools as isize => {
                     log::debug!("[PROFILE] Received GetTools request");
+                    attribute = &[ProfileAttribute::Tools];
+                    get_single_attribute = true;
                 }
                 request if request == RequestCodes::GetIngredients as isize => {
                     log::debug!("[PROFILE] Received GetIngredients request");
+                    attribute = &[ProfileAttribute::Ingredients];
+                    get_single_attribute = true;
                 }
                 request if request == RequestCodes::GetLocation as isize => {
                     log::debug!("[PROFILE] Received GetLocation request");
+                    log::error!("[PROFILE] Location request not yet implemented!");
                 }
                 request if request == RequestCodes::EditProfile as isize => {
                     log::debug!("[PROFILE] Received EditProfile request");
+                    log::error!("[PROFILE] Profile editing not yet implemented!");
                 }
                 request => log::warn!("[PROFILE] Received unsupported request code: {request}"),
+            }
+
+            if get_single_attribute {
+                let output: HashMap<ProfileAttribute, HashMap<String, String>> =
+                    match read_profile_attributes(user_id, attribute, client).await {
+                        Ok(output) => Ok(output),
+                        Err(e) => Err(std::io::Error::new(
+                            std::io::ErrorKind::InvalidData,
+                            format!("Failed to get attribute {attribute:?}: {e}"),
+                        )),
+                    }?;
+
+                log::debug!("Request for {attribute:?} successful!\n{output:#?}");
             }
         } else {
             // Match call from user/webclient
@@ -189,15 +219,112 @@ async fn process_requests(listener: &TcpListener) -> std::io::Result<()> {
     }
 }
 
+// Test user UUID: 1816fb50-e925-4550-a1ef-573caf45ef66
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 struct Profile {
-    uid: u32,
-    preferences: Vec<String>,
-    restrictions: Vec<String>,
-    tools: Vec<String>,
-    ingredients: Vec<String>,
-    location: Vec<String>,
+    user: String,
+    dietary_preferences: HashMap<String, String>,
+    dietary_restrictions: HashMap<String, String>,
+    available_tools: HashMap<String, String>,
+    available_ingredients: HashMap<String, String>,
 }
 
-fn fetch_profile(_user_id: u32, _client: &SupabaseClient) -> Option<Profile> {
-    None
+#[derive(PartialEq, Eq, Hash, Debug)]
+enum ProfileAttribute {
+    Preferences,
+    Restrictions,
+    Tools,
+    Ingredients,
+    Uuid,
+    Unknown,
+}
+
+async fn read_profile_attributes(
+    user_id: &str,
+    attribute: &[ProfileAttribute],
+    client: &SupabaseClient,
+) -> Result<HashMap<ProfileAttribute, HashMap<String, String>>, String> {
+    use serde_json::Value;
+    use supabase_rs::query::QueryBuilder;
+
+    let columns: Vec<&str> = attribute
+        .iter()
+        .map(|attr| match attr {
+            ProfileAttribute::Preferences => "dietary_preferences",
+            ProfileAttribute::Restrictions => "dietary_restrictions",
+            ProfileAttribute::Tools => "available_tools",
+            ProfileAttribute::Ingredients => "available_ingredients",
+            ProfileAttribute::Uuid => "user",
+            ProfileAttribute::Unknown => "*",
+        })
+        .collect();
+
+    let profile_query: QueryBuilder = client
+        .select("Profile")
+        .eq("user", user_id)
+        .columns(columns.clone());
+
+    let output: Vec<Value> = profile_query.execute().await?;
+
+    if output.is_empty() {
+        Err("Query returned empty!".to_string())
+    } else if output.len() > 1 {
+        Err("Query returned multiple profiles. Please check input parameters".to_string())
+    } else {
+        let row = output.first().unwrap();
+        let mapped_values: HashMap<ProfileAttribute, HashMap<String, String>> =
+            HashMap::from_iter(columns.iter().map(|&entry| {
+                let key: ProfileAttribute = match entry {
+                    "dietary_preferences" => ProfileAttribute::Preferences,
+                    "dietary_restrictions" => ProfileAttribute::Restrictions,
+                    "available_tools" => ProfileAttribute::Tools,
+                    "available_ingredients" => ProfileAttribute::Ingredients,
+                    _ => ProfileAttribute::Unknown,
+                };
+
+                log::debug!("row: {row:#?}");
+
+                let value: HashMap<String, String> = if key == ProfileAttribute::Unknown {
+                    HashMap::new()
+                } else {
+                    let entry_value: Value = row.get(entry).unwrap_or(&Value::Null).clone();
+
+                    serde_json::from_value(entry_value).unwrap_or(HashMap::new())
+                };
+
+                (key, value)
+            }));
+        Ok(mapped_values)
+    }
+}
+
+async fn fetch_profile(user_id: &str, client: &SupabaseClient) -> Result<Profile, String> {
+    use serde_json::Value;
+    use supabase_rs::query::QueryBuilder;
+
+    let profile_query: QueryBuilder = client.select("Profile").eq("user", user_id).columns(vec![
+        "dietary_preferences",
+        "dietary_restrictions",
+        "available_tools",
+        "available_ingredients",
+        "user",
+    ]);
+    let row: Vec<Value> = profile_query.execute().await?;
+
+    if !row.is_empty() {
+        let profile_object: String = row.first().unwrap().to_string();
+        match serde_json::from_str::<Profile>(&profile_object) {
+            Ok(profile) => {
+                log::debug!("Successfully fetched profile: {profile:#?}");
+                Ok(profile)
+            }
+            Err(e) => {
+                log::debug!("Object: {profile_object}");
+                log::warn!("Deserialisation Error: {e}");
+                Err("[PROFILE] Failed to deserialise noon-empty DB result".to_string())
+            }
+        }
+    } else {
+        Err("[PROFILE] Failed to deserialise DB result".to_string())
+    }
 }

@@ -5,8 +5,8 @@ This service provides recipe recommendations and recipe CRUD operations. It is i
 ## Endpoints
 
 - **CRUD for `Recipe` table**: Create, read, update, and delete recipes with fields: name, description, ingredients, tools, instructions, estimated_price, estimated_time, image_url.
-- **POST `/recipe/recommend_recipes`**: Recommend recipes based on user profile (dietary preferences, restrictions, available tools/ingredients).
-- **POST `/recipe/recommend_recipes_search`**: Recommend recipes using Google GenAI with Google Search if no local match is found.
+- **POST `/recipe/recommend_recipes`**: Recommend recipes based on user profile (dietary preferences, restrictions, available tools/ingredients). Requires `user_id` query parameter.
+- **POST `/recipe/recommend_recipes_search`**: Recommend recipes using Google GenAI with Google Search if no local match is found. Requires `user_id` query parameter.
 
 ## Getting Started
 
@@ -14,7 +14,7 @@ This service provides recipe recommendations and recipe CRUD operations. It is i
    ```cmd
    python -m venv venv
    ```
-   Then, activate the virual environment.
+   Then, activate the virtual environment.
 2. Install dependencies:
    ```cmd
    pip install -r requirements.txt
@@ -33,7 +33,15 @@ This service provides recipe recommendations and recipe CRUD operations. It is i
 ## API Overview
 
 - All endpoints are prefixed with `/recipe`.
-- See `API_CONTRACT.md` for detailed API contract and example payloads.
+- All endpoints expect and return JSON.
+- See `API_CONTRACT.md` for detailed API contract, error handling, and example payloads.
+
+## Error Handling
+
+- All errors return a JSON object with a `detail` field describing the error.
+- Validation errors return HTTP 422.
+- Not found errors return HTTP 404.
+- Supabase or internal errors return HTTP 400 or 502 as appropriate.
 
 ## Testing
 

@@ -20,7 +20,10 @@ This document describes the REST API contract for the Recipe Recommendation Serv
 
 - `ingredients` and `tools` are arrays of objects, e.g.:
   ```json
-  [{ "egg": "A large egg" }, { "flour": "All-purpose flour" }]
+  [
+    { "name": "egg", "description": "A large egg" },
+    { "name": "flour", "description": "All-purpose flour" }
+  ]
   ```
 - `instructions` is an array of strings, e.g.:
   ```json
@@ -31,6 +34,8 @@ This document describes the REST API contract for the Recipe Recommendation Serv
 
 ## Endpoints
 
+All endpoints expect and return JSON.
+
 ### 1. Create Recipe
 
 - **POST** `/recipe/`
@@ -40,8 +45,8 @@ This document describes the REST API contract for the Recipe Recommendation Serv
 {
   "name": "string",
   "description": "string",
-  "ingredients": [ { "ingredient": "desc" }, ... ],
-  "tools": [ { "tool": "desc" }, ... ],
+  "ingredients": [ { "name": "egg", "description": "A large egg" }, ... ],
+  "tools": [ { "name": "pan", "description": "Non-stick pan" }, ... ],
   "instructions": [ "step 1", "step 2" ],
   "estimated_price": 10.5,
   "estimated_time": "string",
@@ -57,8 +62,8 @@ This document describes the REST API contract for the Recipe Recommendation Serv
   "id": 1,
   "name": "string",
   "description": "string",
-  "ingredients": [{ "ingredient": "desc" }],
-  "tools": [{ "tool": "desc" }],
+  "ingredients": [{ "name": "egg", "description": "A large egg" }],
+  "tools": [{ "name": "pan", "description": "Non-stick pan" }],
   "instructions": ["step 1", "step 2"],
   "estimated_price": 10.5,
   "estimated_time": "string",
@@ -187,9 +192,7 @@ This document describes the REST API contract for the Recipe Recommendation Serv
 
 ```json
 {
-  "results": [ "string (LLM text response)", ... ],
-  "stored": [ { ...Recipe }, ... ],
-  "grounding": "string (web content)" // may be null
+  "results": [ { ...Recipe }, ... ]
 }
 ```
 

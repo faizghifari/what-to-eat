@@ -115,8 +115,8 @@ def test_recommend_recipes():
             {"oven": "used for baking, roasting, and broiling foods."}
         ],
         "instructions": [
-            {"Mix ingredients": "Combine all ingredients thoroughly."},
-            {"Bake": "Place in oven and bake until done."}
+            "Mix ingredients. Combine all ingredients thoroughly.",
+            "Bake. Place in oven and bake until done."
         ],
         "estimated_price": 10.5,
         "estimated_time": "30 min",
@@ -149,9 +149,17 @@ def test_create_recipe_missing_required_field():
     # Should fail because 'name' is required
     payload = {
         "description": "No name field",
-        "ingredients": ["egg"],
-        "tools": ["pan"],
-        "instructions": ["Mix"],
+        "ingredients": [
+            {"quinoa": "a gluten-free grain high in protein and fiber."},
+            {"chickpeas": "a legume used in salads, stews, and hummus."}
+        ],
+        "tools": [
+            {"oven": "used for baking, roasting, and broiling foods."}
+        ],
+        "instructions": [
+            "Mix ingredients. Combine all ingredients thoroughly.",
+            "Bake. Place in oven and bake until done."
+        ]
         "estimated_price": 1.0,
         "estimated_time": "10 min",
         "image_url": "http://example.com/img.jpg"

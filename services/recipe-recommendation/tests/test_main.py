@@ -48,7 +48,7 @@ def recipe_payload():
             {"Mix ingredients": "Combine all ingredients thoroughly."},
             {"Bake": "Place in oven and bake until done."}
         ],
-        "estimated_price": "10.000-15.000",
+        "estimated_price": 10.5,
         "estimated_time": "30 min",
         "image_url": "http://example.com/cake.jpg"
     }
@@ -90,7 +90,7 @@ def test_get_recipe(recipe_payload):
 def test_update_recipe(recipe_payload):
     create_resp = client.post("/recipe/", json=recipe_payload)
     recipe_id = create_resp.json()["id"]
-    update = {"name": "Updated Cake", "estimated_price": "12.000-18.000"}
+    update = {"name": "Updated Cake", "estimated_price": 12.0}
     response = client.put(f"/recipe/{recipe_id}", json=update)
     assert response.status_code == 200
     assert response.json()["name"] == "Updated Cake"
@@ -118,7 +118,7 @@ def test_recommend_recipes():
             "Mix ingredients. Combine all ingredients thoroughly.",
             "Bake. Place in oven and bake until done."
         ],
-        "estimated_price": "10.000-15.000",
+        "estimated_price": 10.5,
         "estimated_time": "30 min",
         "image_url": "http://example.com/cake.jpg"
     }
@@ -160,7 +160,7 @@ def test_create_recipe_missing_required_field():
             "Mix ingredients. Combine all ingredients thoroughly.",
             "Bake. Place in oven and bake until done."
         ]
-        "estimated_price": "1.000-2.000",
+        "estimated_price": 1.0,
         "estimated_time": "10 min",
         "image_url": "http://example.com/img.jpg"
     }

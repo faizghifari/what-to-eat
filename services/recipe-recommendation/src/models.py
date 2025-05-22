@@ -8,7 +8,7 @@ class Recipe(BaseModel):
     ingredients: Any
     tools: Any
     instructions: Any
-    estimated_price: str
+    estimated_price: float
     estimated_time: str
     image_url: str
 
@@ -18,6 +18,6 @@ class RecipeUpdate(BaseModel):
     ingredients: Optional[Any] = None
     tools: Optional[Any] = None
     instructions: Optional[Any] = None
-    estimated_price: Optional[str] = None
+    estimated_price: Optional[float] = None
     estimated_time: Optional[str] = None
     image_url: Optional[str] = None

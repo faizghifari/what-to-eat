@@ -28,7 +28,7 @@ def recommend_recipes_search(user_id: str):
         f"and can be made with tools: {list(available_tools)} and ingredients: {list(available_ingredients)}. "
         "Explicitly search the web for recipes. "
         "Return results as JSON with these fields and types: "
-        "name (string), description (string), ingredients (array of objects), tools (array of objects), instructions (array of strings), estimated_price (string, price range), estimated_time (string), image_url (string)."
+        "name (string), description (string), ingredients (array of objects), tools (array of objects), instructions (array of strings), estimated_price (float), estimated_time (string), image_url (string)."
     )
     from google import genai
     from google.genai.types import Tool, GenerateContentConfig, GoogleSearch
@@ -60,9 +60,12 @@ def recommend_recipes_search(user_id: str):
                 continue
             required = ["name", "description", "ingredients", "tools", "instructions", "estimated_price", "estimated_time", "image_url"]
             for recipe in recipes:
-                # Ensure estimated_price is a string
-                if "estimated_price" in recipe and not isinstance(recipe["estimated_price"], str):
-                    recipe["estimated_price"] = str(recipe["estimated_price"])
+                # Ensure estimated_price is a float
+                if "estimated_price" in recipe and not isinstance(recipe["estimated_price"], float):
+                    try:
+                        recipe["estimated_price"] = float(recipe["estimated_price"])
+                    except Exception:
+                        continue
                 if all(field in recipe for field in required):
                     recipes_to_store.append(recipe)
         except Exception:

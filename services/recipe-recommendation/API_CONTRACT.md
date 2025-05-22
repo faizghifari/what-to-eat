@@ -14,7 +14,7 @@ This document describes the REST API contract for the Recipe Recommendation Serv
 | ingredients     | array  | List of ingredient objects                   |
 | tools           | array  | List of tool objects                         |
 | instructions    | array  | List of instructions (JSON array of strings) |
-| estimated_price | string | Estimated price (e.g. '10.000-15.000')       |
+| estimated_price | float  | Estimated price                              |
 | estimated_time  | string | Estimated time (e.g. '30 min')               |
 | image_url       | string | Image URL                                    |
 
@@ -43,7 +43,7 @@ This document describes the REST API contract for the Recipe Recommendation Serv
   "ingredients": [ { "ingredient": "desc" }, ... ],
   "tools": [ { "tool": "desc" }, ... ],
   "instructions": [ "step 1", "step 2" ],
-  "estimated_price": "10.000-15.000",
+  "estimated_price": 10.5,
   "estimated_time": "string",
   "image_url": "string"
 }
@@ -60,7 +60,7 @@ This document describes the REST API contract for the Recipe Recommendation Serv
   "ingredients": [{ "ingredient": "desc" }],
   "tools": [{ "tool": "desc" }],
   "instructions": ["step 1", "step 2"],
-  "estimated_price": "10.000-15.000",
+  "estimated_price": 10.5,
   "estimated_time": "string",
   "image_url": "string"
 }

@@ -1,8 +1,9 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
+
 from models import Recipe, RecipeUpdate
-from utils import get_user_profile, extract_keys, filter_recipes
-from main import supabase
+from utils import supabase, get_user_profile, extract_keys, filter_recipes
+
 from typing import List
 
 router = APIRouter()

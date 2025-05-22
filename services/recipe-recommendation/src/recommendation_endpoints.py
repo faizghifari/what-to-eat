@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-from utils import get_user_profile, extract_keys, filter_recipes
-from main import supabase, GOOGLE_GENAI_MODEL
+
+from utils import supabase, get_user_profile, extract_keys, filter_recipes, GOOGLE_GENAI_MODEL
 
 router = APIRouter()
 

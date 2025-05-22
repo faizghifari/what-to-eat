@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
-from utils import supabase, get_user_profile, extract_keys, filter_recipes, GOOGLE_GENAI_MODEL
+from recipe.utils import supabase, get_user_profile, extract_keys, filter_recipes, GOOGLE_GENAI_MODEL
 
 router = APIRouter()
 
@@ -26,7 +26,7 @@ def recommend_recipes_search(user_id: str):
     prompt = (
         f"Use a web search to find recipes that do not contain: {list(restrictions)}, "
         f"and can be made with tools: {list(available_tools)} and ingredients: {list(available_ingredients)}. "
-        "Explicitly search the web for recipes. "
+        "Explicitly search the web for recipes, the more the better. "
         "Return results as JSON with these fields and types: "
         "name (string), description (string), ingredients (array of objects), tools (array of objects), instructions (array of strings), estimated_price (float), estimated_time (string), image_url (string)."
     )

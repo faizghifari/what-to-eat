@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+asyncpg
+supabase
+python-dotenv
+google-generativeai
+httpx
+pytest
+pytest-cov

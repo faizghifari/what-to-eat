@@ -8,6 +8,10 @@ from unittest.mock import patch
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
 from main import app
 from utils import get_user_profile
+from supabase import create_client, Client
+from dotenv import load_dotenv
+
+load_dotenv()
 
 client = TestClient(app)
 
@@ -33,9 +37,17 @@ def recipe_payload():
     return {
         "name": "Test Cake",
         "description": "A test recipe.",
-        "ingredients": ["egg", "flour", "milk", "sugar"],
-        "tools": ["pan"],
-        "instructions": ["Mix ingredients", "Bake"],
+        "ingredients": [
+            {"quinoa": "a gluten-free grain high in protein and fiber."},
+            {"chickpeas": "a legume used in salads, stews, and hummus."}
+        ],
+        "tools": [
+            {"oven": "used for baking, roasting, and broiling foods."}
+        ],
+        "instructions": [
+            {"Mix ingredients": "Combine all ingredients thoroughly."},
+            {"Bake": "Place in oven and bake until done."}
+        ],
         "estimated_price": 10.5,
         "estimated_time": "30 min",
         "image_url": "http://example.com/cake.jpg"
@@ -44,10 +56,6 @@ def recipe_payload():
 @pytest.fixture(autouse=True)
 def cleanup_test_recipes():
     # Cleanup before and after each test
-    from supabase import create_client, Client
-    import os
-    from dotenv import load_dotenv
-    load_dotenv()
     SUPABASE_URL = os.getenv("SUPABASE_URL")
     SUPABASE_KEY = os.getenv("SUPABASE_KEY")
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -95,7 +103,6 @@ def test_delete_recipe(recipe_payload):
     assert response.json()["message"] == "Recipe deleted"
 
 def test_recommend_recipes():
-    # Use real profile from Supabase with id=1
     # Insert a test recipe that should be recommended
     test_recipe = {
         "name": "Test Cake",
@@ -116,7 +123,8 @@ def test_recommend_recipes():
         "image_url": "http://example.com/cake.jpg"
     }
     client.post("/recipe/", json=test_recipe)
-    response = client.post("/recipe/recommend_recipes", params={"user_id": 1})
+    response = client.post("/recipe/recommend_recipes", params={"user_id": os.getenv("SUPABASE_TEST_UUID")})
+    print(response)
     assert response.status_code == 200
     assert "results" in response.json()
     found = any(r["name"] == "Test Cake" for r in response.json()["results"])
@@ -128,7 +136,8 @@ def test_recommend_recipes():
 
 def test_recommend_recipes_search_real():
     # Use real profile from Supabase with id=1
-    response = client.post("/recipe/recommend_recipes_search", params={"user_id": 1})
+    response = client.post("/recipe/recommend_recipes_search", params={"user_id": os.getenv("SUPABASE_TEST_UUID")})
+    print(response)
     assert response.status_code == 200
     assert "results" in response.json()
     assert "stored" in response.json()
@@ -176,7 +185,7 @@ def test_get_user_profile_not_found(monkeypatch):
             return self
         def execute(self):
             return DummyRes()
-    from main import supabase
+    from utils import supabase
     monkeypatch.setattr(supabase, "table", lambda name: DummyTable())
     with pytest.raises(Exception) as exc:
         get_user_profile("99999999")
@@ -193,7 +202,7 @@ def test_get_user_profile_supabase_error(monkeypatch):
             return self
         def execute(self):
             raise Exception({"message": "Simulated supabase error"})
-    from main import supabase
+    from utils import supabase
     monkeypatch.setattr(supabase, "table", lambda name: DummyTable())
     from utils import get_user_profile
     with pytest.raises(Exception) as exc:

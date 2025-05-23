@@ -1,34 +1,8 @@
-<<<<<<< Updated upstream
-#![allow(dead_code)]
-
-mod interfaces;
-
-use supabase_rs::{SupabaseClient, errors::ErrorTypes as SupabaseError};
-use tokio::net::TcpListener;
-
-enum LocalPorts {
-    RecipeRecommend = 5001,
-    MenuRecommend = 5002,
-    EatTogether = 5003,
-    Profile = 5004,
-}
-
-enum RequestCodes {
-    GetProfile = 100,
-    EditProfile = 200,
-    GetPreferences = 300,
-    GetRestrictions = 400,
-    GetTools = 500,
-    GetIngredients = 600,
-    GetLocation = 700,
-}
-=======
 use interprocess::local_socket::tokio::Stream as LocalStream;
 use poem::{Body, Request, Route, Server, get, handler, listener::TcpListener, post};
 use tokio::io::AsyncReadExt;
 
 mod subservices;
->>>>>>> Stashed changes
 
 fn main() {
     use tokio::runtime::Runtime;
@@ -64,53 +38,6 @@ async fn run_combined_system() {
     }
 }
 
-<<<<<<< Updated upstream
-async fn profile_runner(_client: &SupabaseClient) {
-    use std::net::Ipv6Addr;
-
-    // Listen for calls to Profile service socket
-    const PROFILE_SOCKET: (Ipv6Addr, u16) = (Ipv6Addr::LOCALHOST, 5004);
-    if let Ok(listener) = TcpListener::bind(PROFILE_SOCKET).await {
-        log::debug!("[PROFILE] Bound to socket successfully!");
-        manage_listener(&listener).await;
-    } else {
-        log::error!("[PROFILE] Failed to bind to socket.");
-    }
-}
-
-async fn manage_listener(listener: &TcpListener) {
-    if let Err(e) = process_requests(listener).await {
-        log::warn!("[PROFILE] Error encountered when processing Profile service request: {e:#?}");
-        // Have to box the new async function to avoid an infinite size Future
-        Box::pin(manage_listener(listener)).await;
-    }
-}
-
-async fn process_requests(listener: &TcpListener) -> std::io::Result<()> {
-    use std::net::{IpAddr, Ipv6Addr};
-    log::debug!("[PROFILE] Listening for incoming requests...");
-    loop {
-        // Accept new incoming connection
-        let (_stream, origin_address) = listener.accept().await?;
-        if origin_address.ip() == IpAddr::V6(Ipv6Addr::LOCALHOST) {
-            // Match call from other services
-            let port: u16 = origin_address.port();
-            if port == LocalPorts::RecipeRecommend as u16 {
-                todo!()
-            } else if port == LocalPorts::MenuRecommend as u16 {
-                todo!()
-            } else if port == LocalPorts::EatTogether as u16 {
-                todo!()
-            } else {
-                log::warn!("[PROFILE] Request received from unexpected local port: {port}");
-            }
-        } else {
-            // Match call from user/webclient
-            todo!()
-        }
-    }
-}
-=======
 // Routing service
 async fn create_http_server() -> Result<(), std::io::Error> {
     log::debug!("[ROUTER] Starting HTTP server...");
@@ -280,4 +207,3 @@ async fn auth_forward_to_menu() {
 // --- DELTE tot delete data
 // ---> Tokens also stored in DB
 // - Auth receives both tokens for verification
->>>>>>> Stashed changes

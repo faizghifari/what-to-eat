@@ -4,11 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-<<<<<<< Updated upstream
-=======
 # Supabase
 supabase_rs = "0.4.2"
 supabase-auth = "0.10.13"
+uuid = "1.17.0"
 # Async
 tokio = {version= "1.45.0", features=["net", "rt-multi-thread"]}
 # HTTP Framework (raw TCP is easier imo)
@@ -18,12 +17,10 @@ interprocess = {version="2.2.3", features=["tokio"]}
 # Serialisation/deserialisation
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
+serde_cbor = "0.11.2"
 # Logging
->>>>>>> Stashed changes
 log = "0.4.27"
 simple_logger = "5.0.0"
-serde_cbor = "0.11.2"
-uuid = "1.17.0"
 
 [profile.dev]
 lto = "off"

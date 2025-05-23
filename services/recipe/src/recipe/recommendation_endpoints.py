@@ -1,6 +1,6 @@
 import json
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Header
 from fastapi.responses import JSONResponse
 
 from recipe.utils import supabase, get_user_profile, extract_names, filter_recipes, GOOGLE_GENAI_MODEL
@@ -9,8 +9,8 @@ from recipe.models import Recipe
 router = APIRouter()
 
 @router.post("/recipe/recommend_recipes")
-def recommend_recipes(user_id: str):
-    profile = get_user_profile(user_id)
+def recommend_recipes(x_user_uuid: str = Header(..., alias="X-User-uuid")):
+    profile = get_user_profile(x_user_uuid)
     restrictions = extract_names(profile.get("dietary_restrictions", {}))
     available_tools = extract_names(profile.get("available_tools", {}))
     available_ingredients = extract_names(profile.get("available_ingredients", {}))
@@ -21,8 +21,8 @@ def recommend_recipes(user_id: str):
     return {"results": filtered}
 
 @router.post("/recipe/recommend_recipes_search")
-def recommend_recipes_search(user_id: str):
-    profile = get_user_profile(user_id)
+def recommend_recipes_search(x_user_uuid: str = Header(..., alias="X-User-uuid")):
+    profile = get_user_profile(x_user_uuid)
     restrictions = extract_names(profile.get("dietary_restrictions", {}))
     available_tools = extract_names(profile.get("available_tools", {}))
     available_ingredients = extract_names(profile.get("available_ingredients", {}))
@@ -75,7 +75,7 @@ def recommend_recipes_search(user_id: str):
             return {
                 "results": stored.data,
             }
-        except Exception:
+        except Exception as e:
             detail = getattr(e, 'message', str(e))
             if hasattr(e, 'args') and e.args and isinstance(e.args[0], dict):
                 err = e.args[0]

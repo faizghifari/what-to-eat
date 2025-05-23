@@ -60,12 +60,25 @@ def cleanup_test_recipes():
     SUPABASE_KEY = os.getenv("SUPABASE_KEY")
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
     # Before: delete any leftover test data
-    supabase.table("Recipe").delete().eq("name", "Test Cake").execute()
-    supabase.table("Recipe").delete().eq("name", "Updated Cake").execute()
+    for name in [
+        "Test Cake", "Updated Cake", "Test Cake For Rating", "Test Cake For Rating List",
+        "Test Cake For My Rating", "Test Cake For Update Rating", "Test Cake For Delete Rating"
+    ]:
+        # Delete ratings for recipes with this name
+        recipes = supabase.table("Recipe").select("id").eq("name", name).execute().data or []
+        for recipe in recipes:
+            supabase.table("Rating").delete().eq("recipe", recipe["id"]).execute()
+        supabase.table("Recipe").delete().eq("name", name).execute()
     yield
     # After: delete any test data created
-    supabase.table("Recipe").delete().eq("name", "Test Cake").execute()
-    supabase.table("Recipe").delete().eq("name", "Updated Cake").execute()
+    for name in [
+        "Test Cake", "Updated Cake", "Test Cake For Rating", "Test Cake For Rating List",
+        "Test Cake For My Rating", "Test Cake For Update Rating", "Test Cake For Delete Rating"
+    ]:
+        recipes = supabase.table("Recipe").select("id").eq("name", name).execute().data or []
+        for recipe in recipes:
+            supabase.table("Rating").delete().eq("recipe", recipe["id"]).execute()
+        supabase.table("Recipe").delete().eq("name", name).execute()
 
 def test_create_recipe(recipe_payload):
     response = client.post("/recipe/", json=recipe_payload)
@@ -103,7 +116,6 @@ def test_delete_recipe(recipe_payload):
     assert response.json()["message"] == "Recipe deleted"
 
 def test_recommend_recipes():
-    # Insert a test recipe that should be recommended
     test_recipe = {
         "name": "Test Cake",
         "description": "A test recipe.",
@@ -123,7 +135,7 @@ def test_recommend_recipes():
         "image_url": "http://example.com/cake.jpg"
     }
     client.post("/recipe/", json=test_recipe)
-    response = client.post(
+    response = client.get(
         "/recipe/matches",
         headers={"X-User-uuid": os.getenv("SUPABASE_TEST_UUID")}
     )
@@ -131,7 +143,6 @@ def test_recommend_recipes():
     assert "results" in response.json()
     found = any(r["name"] == "Test Cake" for r in response.json()["results"])
     assert found
-    # Check that filtering works with new profile structure
     for recipe in response.json()["results"]:
         for restricted in ["gluten", "lactose", "soy", "pork", "shellfish", "nuts"]:
             for ingredient in recipe["ingredients"]:
@@ -139,8 +150,7 @@ def test_recommend_recipes():
 
 
 def test_recommend_recipes_search_real():
-    # Use real profile from Supabase with id=1
-    response = client.post(
+    response = client.get(
         "/recipe/matches_web",
         headers={"X-User-uuid": os.getenv("SUPABASE_TEST_UUID")}
     )
@@ -247,7 +257,7 @@ def test_recommend_recipes_no_match(monkeypatch):
     # Patch filter_recipes to always return an empty list
     from recipe import recommendation_endpoints
     monkeypatch.setattr(recommendation_endpoints, "filter_recipes", lambda *a, **k: [])
-    response = client.post(
+    response = client.get(
         "/recipe/matches",
         headers={"X-User-uuid": os.getenv("SUPABASE_TEST_UUID")}
     )

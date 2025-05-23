@@ -8,7 +8,7 @@ from recipe.models import Recipe
 
 router = APIRouter()
 
-@router.post("/recipe/recommend_recipes")
+@router.get("/recipe/matches")
 def recommend_recipes(x_user_uuid: str = Header(..., alias="X-User-uuid")):
     profile = get_user_profile(x_user_uuid)
     restrictions = extract_names(profile.get("dietary_restrictions", {}))
@@ -20,7 +20,7 @@ def recommend_recipes(x_user_uuid: str = Header(..., alias="X-User-uuid")):
         return JSONResponse(status_code=200, content={"message": "No recipes found. Search the internet?", "results": []})
     return {"results": filtered}
 
-@router.post("/recipe/recommend_recipes_search")
+@router.get("/recipe/matches_web")
 def recommend_recipes_search(x_user_uuid: str = Header(..., alias="X-User-uuid")):
     profile = get_user_profile(x_user_uuid)
     restrictions = extract_names(profile.get("dietary_restrictions", {}))

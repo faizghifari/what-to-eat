@@ -159,8 +159,8 @@ All endpoints expect and return JSON.
 ### 6. Recommend Recipes
 
 - **POST** `/recipe/recommend_recipes`
-- **Query Parameter:**
-  - `user_id` (string, required)
+- **Headers:**
+  - `X-User-uuid` (string, required)
 - **Response:**
   - Code: `200 OK`
 
@@ -185,8 +185,8 @@ All endpoints expect and return JSON.
 ### 7. Recommend Recipes with Google GenAI
 
 - **POST** `/recipe/recommend_recipes_search`
-- **Query Parameter:**
-  - `user_id` (string, required)
+- **Headers:**
+  - `X-User-uuid` (string, required)
 - **Response:**
   - Code: `200 OK`
 

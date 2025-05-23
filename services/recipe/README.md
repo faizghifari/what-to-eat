@@ -5,8 +5,8 @@ This service provides recipe recommendations and recipe CRUD operations. It is i
 ## Endpoints
 
 - **CRUD for `Recipe` table**: Create, read, update, and delete recipes with fields: name, description, ingredients, tools, instructions, estimated_price, estimated_time, image_url.
-- **POST `/recipe/recommend_recipes`**: Recommend recipes based on user profile (dietary preferences, restrictions, available tools/ingredients). Requires `user_id` query parameter.
-- **POST `/recipe/recommend_recipes_search`**: Recommend recipes using Google GenAI with Google Search if no local match is found. Requires `user_id` query parameter.
+- **POST `/recipe/matches`**: Recommend recipes based on user profile (dietary preferences, restrictions, available tools/ingredients). Requires `user_id` query parameter.
+- **POST `/recipe/matches_web`**: Recommend recipes using Google GenAI with Google Search if no local match is found. Requires `user_id` query parameter.
 
 ## Getting Started
 

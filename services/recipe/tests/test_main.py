@@ -124,7 +124,7 @@ def test_recommend_recipes():
     }
     client.post("/recipe/", json=test_recipe)
     response = client.post(
-        "/recipe/recommend_recipes",
+        "/recipe/matches",
         headers={"X-User-uuid": os.getenv("SUPABASE_TEST_UUID")}
     )
     assert response.status_code == 200
@@ -141,7 +141,7 @@ def test_recommend_recipes():
 def test_recommend_recipes_search_real():
     # Use real profile from Supabase with id=1
     response = client.post(
-        "/recipe/recommend_recipes_search",
+        "/recipe/matches_web",
         headers={"X-User-uuid": os.getenv("SUPABASE_TEST_UUID")}
     )
     assert response.status_code == 200
@@ -248,7 +248,7 @@ def test_recommend_recipes_no_match(monkeypatch):
     from recipe import recommendation_endpoints
     monkeypatch.setattr(recommendation_endpoints, "filter_recipes", lambda *a, **k: [])
     response = client.post(
-        "/recipe/recommend_recipes",
+        "/recipe/matches",
         headers={"X-User-uuid": os.getenv("SUPABASE_TEST_UUID")}
     )
     assert response.status_code == 200

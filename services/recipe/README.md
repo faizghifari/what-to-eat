@@ -5,8 +5,9 @@ This service provides recipe recommendations and recipe CRUD operations. It is i
 ## Endpoints
 
 - **CRUD for `Recipe` table**: Create, read, update, and delete recipes with fields: name, description, ingredients, tools, instructions, estimated_price, estimated_time, image_url.
-- **POST `/recipe/matches`**: Recommend recipes based on user profile (dietary preferences, restrictions, available tools/ingredients). Requires `user_id` query parameter.
-- **POST `/recipe/matches_web`**: Recommend recipes using Google GenAI with Google Search if no local match is found. Requires `user_id` query parameter.
+- **CRUD for `Rating` table**: Users can rate recipes (create, read, update, delete their rating) with fields: rating_value, comment_text, recipe_id, and user_id (from X-User-uuid header).
+- **POST `/recipe/matches`**: Recommend recipes based on user profile (dietary preferences, restrictions, available tools/ingredients). Requires `X-User-uuid` header.
+- **POST `/recipe/matches_web`**: Recommend recipes using Google GenAI with Google Search if no local match is found. Requires `X-User-uuid` header.
 
 ## Getting Started
 
@@ -35,6 +36,7 @@ This service provides recipe recommendations and recipe CRUD operations. It is i
 - All endpoints are prefixed with `/recipe`.
 - All endpoints expect and return JSON.
 - See `API_CONTRACT.md` for detailed API contract, error handling, and example payloads.
+- See the "Recipe Rating Endpoints" section for how to rate recipes (add, update, delete, and list ratings).
 
 ## Error Handling
 

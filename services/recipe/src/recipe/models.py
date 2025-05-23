@@ -25,3 +25,18 @@ class RecipeUpdate(BaseModel):
     estimated_price: Optional[float] = None
     estimated_time: Optional[str] = None
     image_url: Optional[str] = None
+
+class Rating(BaseModel):
+    id: int | None = None
+    recipe: int
+    user: str
+    rating_value: int
+    comment_text: str
+
+class RatingCreate(BaseModel):
+    rating_value: int
+    comment_text: str = ""
+
+class RatingUpdate(BaseModel):
+    rating_value: int | None = None
+    comment_text: str | None = None

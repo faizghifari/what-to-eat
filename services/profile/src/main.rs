@@ -152,7 +152,7 @@ async fn auth_login(body: Body) -> poem::Result<()> {
                 {
                     log::debug!("[ROUTER] Received response from signup: {response:#?}");
                 } else {
-                    log::error!("[ROUTER] Failedd to deserialise signup response");
+                    log::error!("[ROUTER] Failed to deserialise signup response");
                 }
                 Ok(())
             }

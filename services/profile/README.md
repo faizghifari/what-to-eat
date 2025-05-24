@@ -41,7 +41,7 @@ The Auth service will validate these details before passing the request to the i
     "password2": "encrypted-password"
   }
   ```
-- Response:
+- Response if STATUS=SUCCESS:
   - Body: JSON
     ```
     Body: {
@@ -62,8 +62,8 @@ The Auth service will validate these details before passing the request to the i
     "email": "user@domain.com",
     "password": "encrypted-password",
   }
-  ```
-- Response:
+  ``` 
+- Response if STATUS=SUCCESS:
   - Body: JSON
     ```
     Body: {

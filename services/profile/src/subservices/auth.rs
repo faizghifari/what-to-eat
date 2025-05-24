@@ -227,7 +227,7 @@ async fn process_stream(stream: Stream, client: AuthClient) -> std::io::Result<(
         AuthQueryType::Login => login(&msg, client, sender).await,
         AuthQueryType::SignUp => sign_up(&msg, client, sender).await,
         AuthQueryType::Logout => logout(&msg, client).await,
-        AuthQueryType::Validate => is_valid_user(&msg, client).await,
+        AuthQueryType::Validate => is_valid_user(&msg, client, sender).await,
         AuthQueryType::Unknown => log::warn!("Unsupported Auth request!"),
     };
 
@@ -311,12 +311,51 @@ async fn logout(_bytes: &[u8], _client: AuthClient) {
     log::debug!("Logout function called!");
 }
 
-async fn is_valid_user(bytes: &[u8], _client: AuthClient) {
-    log::debug!("User validation check requested!");
-    match serde_cbor::from_slice::<AuthInfo>(bytes) {
-        Err(e) => log::error!("Failed to deserialise AuthInfo: {e}"),
-        Ok(auth_info) => {
-            log::debug!("Deserialised successfully!: {auth_info:#?}");
+#[derive(Serialize, Deserialize)]
+pub struct UserTokens {
+    pub x_user_uid: String,
+    pub access_token: String,
+    pub refresh_token: String,
+}
+
+async fn is_valid_user(bytes: &[u8], client: AuthClient, mut stream: &Stream) {
+    log::debug!("[AUTH:VALIDATE] User validation check requested!");
+    let response: Result<bool, String> = match serde_cbor::from_slice::<AuthInfo>(bytes) {
+        Err(e) => {
+            log::error!("[AUTH:VALIDATE] Failed to deserialise AuthInfo: {e}");
+            Err(format!("Failed to deserialise AuthInfo: {e}"))
         }
+        Ok(auth_info) => {
+            log::debug!("[AUTH:VALIDATE] Deserialised successfully!");
+            let user = client.get_user(&auth_info.access_token).await;
+            match user {
+                Err(e) => {
+                    log::error!("[AUTH:VALIDATE] Failed to get user: {e}");
+                    Ok(false)
+                }
+                Ok(user) => {
+                    if user
+                        .id
+                        .hyphenated()
+                        .encode_lower(&mut uuid::Uuid::encode_buffer())
+                        == &auth_info.x_user_uid
+                    {
+                        log::debug!("[AUTH:VALIDATE] Authentication successful!");
+                        Ok(true)
+                    } else {
+                        log::warn!("[AUTH:VALIDATE] Access token and user UUID don't match!");
+                        Ok(false)
+                    }
+                }
+            }
+        }
+    };
+
+    let data: Vec<u8> = serde_cbor::to_vec(&response).unwrap_or_else(|_| {
+        log::error!("[AUTH:VALIDATE] Failed to serialise validation response!");
+        vec![]
+    });
+    if let Err(e) = stream.write_all(&data).await {
+        log::error!("[AUTH:VALIDATE] Failed to send response to Router: {e}");
     }
 }

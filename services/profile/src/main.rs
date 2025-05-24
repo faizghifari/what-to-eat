@@ -3,6 +3,7 @@ use poem::{
     Body, IntoResponse, Request, Route, Server, get, handler, http::StatusCode,
     listener::TcpListener, post,
 };
+use subservices::auth::UserTokens;
 use tokio::io::AsyncReadExt;
 
 mod subservices;
@@ -102,10 +103,10 @@ impl IntoResponse for LoginResponse {
 
 #[handler]
 async fn auth_signup(body: Body) -> LoginResponse {
-    log::debug!("[ROUTER] Signup request received. Rerouting!");
+    log::debug!("[ROUTER:SIGNUP] Signup request received. Rerouting!");
 
     if let Ok(signup_info) = body.into_json::<subservices::auth::SignupInfo>().await {
-        log::debug!("[ROUTER] Grabbed request body.");
+        log::debug!("[ROUTER:SIGNUP] Grabbed request body.");
 
         let mut message: Vec<u8> = vec![1];
         message.extend_from_slice(&serde_cbor::to_vec(&signup_info).unwrap_or_else(|_| {
@@ -116,7 +117,7 @@ async fn auth_signup(body: Body) -> LoginResponse {
 
         let stream: Result<LocalStream, _> = subservices::auth::create_auth_stream().await;
         if let Err(ref e) = stream {
-            log::error!("[ROUTER] Failed to connect to Auth service: {e}");
+            log::error!("[ROUTER:SIGNUP] Failed to connect to Auth service: {e}");
             LoginResponse::from_err(poem::Error::from_string(
                 "Router failed to connect to Auth service",
                 poem::http::StatusCode::SERVICE_UNAVAILABLE,
@@ -126,7 +127,7 @@ async fn auth_signup(body: Body) -> LoginResponse {
 
         match subservices::auth::send_to_auth(&stream, &message).await {
             Err(e) => {
-                log::error!("[ROUTER] Failed to send Signup request to Auth service: {e}");
+                log::error!("[ROUTER:SIGNUP] Failed to send Signup request to Auth service: {e}");
                 LoginResponse::from_err(poem::Error::from_string(
                     "Router failed to send signup request to Auth service",
                     poem::http::StatusCode::SERVICE_UNAVAILABLE,
@@ -135,19 +136,19 @@ async fn auth_signup(body: Body) -> LoginResponse {
             Ok(mut stream) => {
                 let mut response_buffer: Vec<u8> = Vec::with_capacity(512);
                 if let Err(e) = stream.read_to_end(&mut response_buffer).await {
-                    log::error!("[ROUTER] Failed to read signup response: {e}");
+                    log::error!("[ROUTER:SIGNUP] Failed to read signup response: {e}");
                 }
                 if let Ok(response) = serde_cbor::from_slice::<
                     subservices::auth::SignupOrLoginResponse,
                 >(&response_buffer)
                 {
-                    log::debug!("[ROUTER] Received response from signup: {response:#?}");
+                    log::debug!("[ROUTER:SIGNUP] Received response from signup: {response:#?}");
                     LoginResponse {
                         err: None,
                         data: Some(response),
                     }
                 } else {
-                    log::error!("[ROUTER] Failed to deserialise signup response");
+                    log::error!("[ROUTER:SIGNUP] Failed to deserialise signup response");
                     LoginResponse::from_err(poem::Error::from_string(
                         "Failed to deserialise signup response: {e}",
                         StatusCode::UNPROCESSABLE_ENTITY,
@@ -156,9 +157,9 @@ async fn auth_signup(body: Body) -> LoginResponse {
             }
         }
     } else {
-        log::error!("[ROUTER] Failed to deserialise Signup request contents!");
+        log::error!("[ROUTER:SIGNUP] Failed to deserialise Signup request contents!");
         LoginResponse::from_err(poem::Error::from_string(
-            "Failed to deserialise signup request: {e}",
+            "Failed to deserialise signup request.",
             StatusCode::UNPROCESSABLE_ENTITY,
         ))
     }
@@ -166,10 +167,10 @@ async fn auth_signup(body: Body) -> LoginResponse {
 
 #[handler]
 async fn auth_login(body: Body) -> LoginResponse {
-    log::debug!("[ROUTER] Signup request received. Rerouting!");
+    log::debug!("[ROUTER:LOGIN] Signup request received. Rerouting!");
 
     if let Ok(login_info) = body.into_json::<subservices::auth::LoginInfo>().await {
-        log::debug!("[ROUTER] Grabbed request body: {login_info:#?}");
+        log::debug!("[ROUTER:LOGIN] Grabbed request body: {login_info:#?}");
 
         let mut message: Vec<u8> = vec![2];
         message.extend_from_slice(&serde_cbor::to_vec(&login_info).unwrap_or_else(|_| {
@@ -180,9 +181,9 @@ async fn auth_login(body: Body) -> LoginResponse {
 
         let stream: Result<LocalStream, _> = subservices::auth::create_auth_stream().await;
         if let Err(e) = stream {
-            log::error!("[ROUTER] Failed to connect to Auth service: {e}");
+            log::error!("[ROUTER:LOGIN] Failed to connect to Auth service: {e}");
             return LoginResponse::from_err(poem::Error::from_string(
-                "Router failed to connect to Auth service",
+                format!("Router failed to connect to Auth service: {e}"),
                 poem::http::StatusCode::SERVICE_UNAVAILABLE,
             ));
         }
@@ -190,18 +191,18 @@ async fn auth_login(body: Body) -> LoginResponse {
 
         match subservices::auth::send_to_auth(&stream, &message).await {
             Err(e) => {
-                log::error!("[ROUTER] Failed to send Login request to Auth service: {e}");
+                log::error!("[ROUTER:LOGIN] Failed to send Login request to Auth service: {e}");
                 LoginResponse::from_err(poem::Error::from_string(
-                    "Router failed to send login request to Auth service",
+                    format!("Router failed to send login request to Auth service: {e}"),
                     poem::http::StatusCode::SERVICE_UNAVAILABLE,
                 ))
             }
             Ok(mut stream) => {
                 let mut response_buffer: Vec<u8> = Vec::with_capacity(512);
                 if let Err(e) = stream.read_to_end(&mut response_buffer).await {
-                    log::error!("[ROUTER] Failed to read login response: {e}");
+                    log::error!("[ROUTER:LOGIN] Failed to read login response: {e}");
                     return LoginResponse::from_err(poem::Error::from_string(
-                        "Failed to read login response: {e}",
+                        format!("Failed to read login response: {e}"),
                         StatusCode::UNPROCESSABLE_ENTITY,
                     ));
                 }
@@ -209,47 +210,179 @@ async fn auth_login(body: Body) -> LoginResponse {
                     subservices::auth::SignupOrLoginResponse,
                 >(&response_buffer)
                 {
-                    log::debug!("[ROUTER] Received response from login: {response:#?}");
+                    log::debug!("[ROUTER:LOGIN] Received response from login: {response:#?}");
                     LoginResponse {
                         err: None,
                         data: Some(response),
                     }
                 } else {
-                    log::error!("[ROUTER] Failed to deserialise login response");
+                    log::error!("[ROUTER:LOGIN] Failed to deserialise login response");
                     LoginResponse::from_err(poem::Error::from_string(
-                        "Failed to deserialise login response: {e}",
+                        "Failed to deserialise login response.",
                         StatusCode::UNPROCESSABLE_ENTITY,
                     ))
                 }
             }
         }
     } else {
-        log::error!("[ROUTER] Failed to deserialise Signup request contents!");
+        log::error!("[ROUTER:LOGIN] Failed to deserialise login request contents!");
         LoginResponse::from_err(poem::Error::from_string(
-            "Failed to read signup request: {e}",
+            "Failed to read signup request",
             StatusCode::UNPROCESSABLE_ENTITY,
         ))
     }
 }
 
-#[handler]
-async fn auth_forward_to_profile(_request: &Request, _body: Body) {
-    log::debug!("[ROUTER] Profile service called!");
+async fn pass_through_auth(request: &Request) -> Result<bool, poem::Error> {
+    let x_user_uid: String = request
+        .header("X-User-Uid")
+        .ok_or_else(|| {
+            log::error!("[ROUTER:AUTHCHECK] Failed to retrieve uuid from header");
+            poem::Error::from_string("Failed find header 'X-User-Uid'", StatusCode::BAD_REQUEST)
+        })?
+        .to_string();
+    let access_token: String = request
+        .header("Access-Token")
+        .ok_or_else(|| {
+            log::error!("[ROUTER:AUTHCHECK] Failed to retrieve access token from header");
+            poem::Error::from_string("Failed find header 'Access-Token'", StatusCode::BAD_REQUEST)
+        })?
+        .to_string();
+    let refresh_token: String = request
+        .header("Refresh-Token")
+        .ok_or_else(|| {
+            log::error!("[ROUTER:AUTHCHECK] Failed to retrieve refresh token from header");
+            poem::Error::from_string(
+                "Failed find header 'Refresh-Token'",
+                StatusCode::BAD_REQUEST,
+            )
+        })?
+        .to_string();
+
+    let user_tokens: UserTokens = UserTokens {
+        x_user_uid,
+        access_token,
+        refresh_token,
+    };
+
+    let mut message: Vec<u8> = vec![4];
+    message.extend_from_slice(&serde_cbor::to_vec(&user_tokens).unwrap_or_else(|_| {
+        log::error!("[ROUTER:AUTHCHECK] Failed to reserialise tokens.");
+        vec![]
+    }));
+    message.push(u8::MAX);
+
+    let stream: Result<LocalStream, _> = subservices::auth::create_auth_stream().await;
+    if let Err(e) = stream {
+        log::error!("[ROUTER:AUTHCHECK] Failed to connect to Auth service: {e}");
+        return Err(poem::Error::from_string(
+            "Router failed to connect to Auth service",
+            poem::http::StatusCode::SERVICE_UNAVAILABLE,
+        ));
+    }
+    let stream: LocalStream = stream.unwrap();
+
+    match subservices::auth::send_to_auth(&stream, &message).await {
+        Err(e) => {
+            log::error!("[ROUTER:AUTHCHECK] Failed to send Login request to Auth service: {e}");
+            Err(poem::Error::from_string(
+                "Router failed to send login request to Auth service",
+                poem::http::StatusCode::SERVICE_UNAVAILABLE,
+            ))
+        }
+        Ok(mut stream) => {
+            let mut response_buffer: Vec<u8> = Vec::with_capacity(8);
+            if let Err(e) = stream.read_to_end(&mut response_buffer).await {
+                log::error!("[ROUTER:AUTHCHECK] Failed to read login response: {e}");
+                return Err(poem::Error::from_string(
+                    format!("Failed to read login response: {e}"),
+                    StatusCode::UNPROCESSABLE_ENTITY,
+                ));
+            }
+            if let Ok(response) = serde_cbor::from_slice::<Result<bool, String>>(&response_buffer) {
+                match response {
+                    Ok(response) => Ok(response),
+                    Err(msg) => Err(poem::Error::from_string(
+                        msg,
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                    )),
+                }
+            } else {
+                Err(poem::Error::from_string(
+                    "Failed to deserialise auth response.",
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                ))
+            }
+        }
+    }
 }
 
 #[handler]
-async fn auth_forward_to_recipe() {
-    log::debug!("[ROUTER] Recipe service called!")
+async fn auth_forward_to_profile(request: &Request, _body: Body) -> Result<(), poem::Error> {
+    log::debug!("[ROUTER:PROFILE] Profile service called!");
+    let is_authenticated: Result<bool, _> = pass_through_auth(request).await;
+    if let Err(e) = is_authenticated {
+        log::error!("[ROUTER:PROFILE] Error in AuthCheck: {e}");
+        return Ok(());
+    }
+    let is_authenticated: bool = is_authenticated.unwrap();
+    if is_authenticated {
+        log::debug!("[ROUTER:PROFILE] AuthCheck successful!");
+    } else {
+        log::warn!("[ROUTER:PROFILE] AuthCheck failed! :(");
+    }
+    Ok(())
 }
 
 #[handler]
-async fn auth_forward_to_ets() {
-    log::debug!("[ROUTER] ETS service called!")
+async fn auth_forward_to_recipe(request: &Request) -> Result<(), poem::Error> {
+    log::debug!("[ROUTER:RECIPE] Recipe service called!");
+    let is_authenticated: Result<bool, _> = pass_through_auth(request).await;
+    if let Err(e) = is_authenticated {
+        log::error!("[ROUTER:RECIPE] Error in AuthCheck: {e}");
+        return Ok(());
+    }
+    let is_authenticated: bool = is_authenticated.unwrap();
+    if is_authenticated {
+        log::debug!("[ROUTER:RECIPE] AuthCheck successful!");
+    } else {
+        log::warn!("[ROUTER:RECIPE] AuthCheck failed! :(");
+    }
+    Ok(())
 }
 
 #[handler]
-async fn auth_forward_to_menu() {
-    log::debug!("[ROUTER] Menu service called!")
+async fn auth_forward_to_ets(request: &Request) -> Result<(), poem::Error> {
+    log::debug!("[ROUTER:ETS] ETS service called!");
+    let is_authenticated: Result<bool, _> = pass_through_auth(request).await;
+    if let Err(e) = is_authenticated {
+        log::error!("[ROUTER:ETS] Error in AuthCheck: {e}");
+        return Ok(());
+    }
+    let is_authenticated: bool = is_authenticated.unwrap();
+    if is_authenticated {
+        log::debug!("[ROUTER:ETS] AuthCheck successful!");
+    } else {
+        log::warn!("[ROUTER:ETS] AuthCheck failed! :(");
+    }
+    Ok(())
+}
+
+#[handler]
+async fn auth_forward_to_menu(request: &Request) -> Result<(), poem::Error> {
+    log::debug!("[ROUTER:MENU] Menu service called!");
+    let is_authenticated: Result<bool, _> = pass_through_auth(request).await;
+    if let Err(e) = is_authenticated {
+        log::error!("[ROUTER:MENU] Error in AuthCheck: {e}");
+        return Ok(());
+    }
+    let is_authenticated: bool = is_authenticated.unwrap();
+    if is_authenticated {
+        log::debug!("[ROUTER:MENU] AuthCheck successful!");
+    } else {
+        log::warn!("[ROUTER:MENU] AuthCheck failed! :(");
+    }
+    Ok(())
 }
 
 // HTTP Headers

@@ -8,15 +8,13 @@ This service manages authentication and user profiles, and acts as middleware be
 
 Other than login and signup requests, all requests should contain the following:<br>
 
-|  | DataType |
+| Header | DataType |
 |--|--|
-| **Header** | |
 | `X-User-Uid`| `String` |
-| **Parameter** |  |
 | `Acces-Token`| `String` |
 | `Refresh-Token`| `String` |
 
-And should then be formatted according to their target service.
+And should then have the request formatted according to their target service in the body.
 
 The Auth service will validate these details before passing the request to the intended service, which will be identified by matching the request path.
 

@@ -33,35 +33,16 @@ pub async fn run() -> std::io::Result<()> {
 }
 
 fn init_supabase_auth_client() -> Result<AuthClient, &'static str> {
-    const SUPABASE_CREDS: &str = "../sb.uk";
-
-    if let Ok(mut file) = std::fs::File::open(SUPABASE_CREDS) {
-        use std::io::Read;
-
-        let mut contents: String = String::new();
-        let _ = file.read_to_string(&mut contents);
-        if contents.is_empty() {
-            log::warn!("[ROUTER] Supabase API creds missing!");
-            Err("Empty credentials file!")
-        } else {
-            let mut lines: std::str::Lines = contents.lines();
-            let supabase_url: String = lines.next().unwrap_or("").to_string();
-            let supabase_key: String = lines.next().unwrap_or("").to_string();
-            let supabase_jwt: String = lines.next().unwrap_or("").to_string();
-
-            if supabase_key.is_empty() || supabase_url.is_empty() {
-                log::warn!("[ROUTER] Failed to read API creds correctly!");
-                Err("Could not read credentials.")
-            } else {
-                Ok(AuthClient::new(supabase_url, supabase_key, supabase_jwt))
-            }
-        }
+    let supabase_url: &'static str = env!("SUPABASE_URL");
+    let supabase_key: &'static str = env!("SUPABASE_KEY");
+    let supabase_jwt: &'static str = env!("SUPABASE_JWT");
+    if supabase_key.is_empty() || supabase_url.is_empty() {
+        log::warn!("[AUTH] Failed to read API creds correctly!");
+        Err("Could not read credentials.")
     } else {
-        log::warn!("[AUTH] Could not find API creds file!");
-        Err("Supabase credentials not found!")
+        Ok(AuthClient::new(supabase_url, supabase_key, supabase_jwt))
     }
 }
-
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub enum AuthQueryType {
     Login,

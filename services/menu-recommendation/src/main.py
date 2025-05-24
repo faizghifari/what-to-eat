@@ -17,6 +17,7 @@ from models import (
     Location,
     Restaurant,
     Menu,
+    Rating,
     MenuFilter,
     CreateRestaurantRequest,
     CreateMenuRequest,
@@ -226,7 +227,11 @@ def list_matches_restaurant(
 def get_restaurant(restaurant_id: str):
     restaurant = (
         supabase.table("Restaurant").select("*").eq("id", restaurant_id).execute()
-    ).data[0]
+    ).data
+    if not restaurant:
+        raise HTTPException(status_code=404, detail="Restaurant not found")
+
+    restaurant = restaurant[0]
     location = Location(
         **(
             supabase.table("Location")
@@ -342,3 +347,89 @@ def list_restaurant_menus(x_user_uuid: Annotated[str, Header()], restaurant_id: 
         menus=menu_responses,
         distance=calculate_distance(user_current_location, restaurant_location),
     )
+
+
+@app.get("/menu")
+def list_all_menus(x_user_uuid: Annotated[str, Header()]):
+    menus = supabase.table("Menu").select("*").execute().data
+
+    menu_responses = []
+    for menu in menus:
+        # Get the average rating for the menu
+        average_rating = (
+            supabase.table("Rating")
+            .select("rating_value")
+            .eq("menu", menu["id"])
+            .execute()
+        ).data
+        average_rating_value = (
+            sum(rating["rating_value"] for rating in average_rating)
+            / len(average_rating)
+            if average_rating
+            else 0
+        )
+        menu["average_rating"] = average_rating_value
+        menu_response = MenuResponse(**menu)
+        menu_responses.append(menu_response)
+
+    return menu_responses
+
+
+@app.get("/menu/{menu_id}")
+def get_menu(menu_id: str):
+    menu = supabase.table("Menu").select("*").eq("id", menu_id).execute().data
+    if not menu:
+        raise HTTPException(status_code=404, detail="Menu not found")
+
+    menu = menu[0]
+    # Get the average rating for the menu
+    average_rating = (
+        supabase.table("Rating").select("rating_value").eq("menu", menu_id).execute()
+    ).data
+    average_rating_value = (
+        sum(rating["rating_value"] for rating in average_rating) / len(average_rating)
+        if average_rating
+        else 0
+    )
+    menu["average_rating"] = average_rating_value
+
+    return MenuResponse(**menu)
+
+
+@app.delete("/menu/{menu_id}", status_code=204)
+def delete_menu(menu_id: str):
+    # Check if menu exists
+    menu = supabase.table("Menu").select("*").eq("id", menu_id).execute().data
+    if not menu:
+        raise HTTPException(status_code=404, detail="Menu not found")
+
+    # Delete menu
+    supabase.table("Menu").delete().eq("id", menu_id).execute()
+
+    # Delete image from storage
+    if menu[0]["image_url"] is not None:
+        image_path = menu[0]["image_url"].split("/")[-1]
+        supabase.storage.from_("media").remove([image_path])
+
+    # Delete ratings associated with the menu
+    supabase.table("Rating").delete().eq("menu", menu_id).execute()
+
+    return 204, None
+
+
+@app.post("/menu/{menu_id}/rate", status_code=201)
+def rate_menu(menu_id: str, request: CreateRatingRequest):
+    # Check if menu exists
+    menu = supabase.table("Menu").select("*").eq("id", menu_id).execute().data
+    if not menu:
+        raise HTTPException(status_code=404, detail="Menu not found")
+
+    # Create rating
+    new_rating = {
+        "rating_value": request.rating_value,
+        "comment_text": request.comment_text,
+        "menu": menu_id,
+    }
+    rating = supabase.table("Rating").insert(new_rating).execute()
+
+    return Rating(**rating.data[0])

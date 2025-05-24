@@ -87,13 +87,7 @@ Responses
 """
 
 
-class MenuResponse(BaseModel):
-    id: int
-    name: str
-    description: str
-    main_ingredients: List[NameDescPair]
-    price: float
-    image_url: Optional[str]
+class MenuResponse(Menu):
     average_rating: float
 
 

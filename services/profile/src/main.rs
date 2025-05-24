@@ -1,5 +1,9 @@
 use interprocess::local_socket::tokio::Stream as LocalStream;
-use poem::{Body, Request, Route, Server, get, handler, listener::TcpListener, post};
+use poem::{
+    Body, IntoResponse, Request, Route, Server, get, handler, http::StatusCode,
+    listener::TcpListener, post,
+};
+use subservices::auth::SignupOrLoginResponse;
 use tokio::io::AsyncReadExt;
 
 mod subservices;
@@ -57,6 +61,46 @@ fn create_router() -> Route {
         .at("/menu/*", get(auth_forward_to_menu))
 }
 
+struct LoginResponse {
+    err: Option<poem::Error>,
+    data: Option<SignupOrLoginResponse>,
+}
+impl LoginResponse {
+    fn from_err(err: poem::Error) -> Self {
+        Self {
+            err: Some(err),
+            data: None,
+        }
+    }
+}
+impl IntoResponse for LoginResponse {
+    fn into_response(self) -> poem::Response {
+        let response: poem::ResponseBuilder = poem::Response::builder();
+        if self.data.is_none() {
+            return response.status(self.err.unwrap().status()).finish();
+        }
+        let data: SignupOrLoginResponse = self.data.unwrap();
+        let status_code: StatusCode;
+        if data.x_user_uid.is_empty() {
+            status_code = StatusCode::NOT_ACCEPTABLE
+        } else {
+            match self.err {
+                None => status_code = StatusCode::OK,
+                Some(err) => return err.into_response(),
+            }
+        };
+
+        if !status_code.is_success() {
+            return response.status(status_code).finish();
+        }
+        if let Ok(body) = serde_json::to_string(&data) {
+            response.body(body)
+        } else {
+            response.status(StatusCode::UNPROCESSABLE_ENTITY).finish()
+        }
+    }
+}
+
 #[handler]
 async fn auth_signup(body: Body) -> Result<(), poem::Error> {
     log::debug!("[ROUTER] Signup request received. Rerouting!");
@@ -94,8 +138,9 @@ async fn auth_signup(body: Body) -> Result<(), poem::Error> {
                 if let Err(e) = stream.read_to_end(&mut response_buffer).await {
                     log::error!("[ROUTER] Failed to read signup response: {e}");
                 }
-                if let Ok(response) =
-                    serde_cbor::from_slice::<subservices::auth::SignupResponse>(&response_buffer)
+                if let Ok(response) = serde_cbor::from_slice::<
+                    subservices::auth::SignupOrLoginResponse,
+                >(&response_buffer)
                 {
                     log::debug!("[ROUTER] Received response from signup: {response:#?}");
                 } else {
@@ -111,7 +156,7 @@ async fn auth_signup(body: Body) -> Result<(), poem::Error> {
 }
 
 #[handler]
-async fn auth_login(body: Body) -> poem::Result<()> {
+async fn auth_login(body: Body) -> LoginResponse {
     log::debug!("[ROUTER] Signup request received. Rerouting!");
 
     if let Ok(login_info) = body.into_json::<subservices::auth::LoginInfo>().await {
@@ -127,7 +172,7 @@ async fn auth_login(body: Body) -> poem::Result<()> {
         let stream: Result<LocalStream, _> = subservices::auth::create_auth_stream().await;
         if let Err(e) = stream {
             log::error!("[ROUTER] Failed to connect to Auth service: {e}");
-            return Err(poem::Error::from_string(
+            return LoginResponse::from_err(poem::Error::from_string(
                 "Router failed to connect to Auth service",
                 poem::http::StatusCode::SERVICE_UNAVAILABLE,
             ));
@@ -137,7 +182,7 @@ async fn auth_login(body: Body) -> poem::Result<()> {
         match subservices::auth::send_to_auth(&stream, &message).await {
             Err(e) => {
                 log::error!("[ROUTER] Failed to send Signup request to Auth service: {e}");
-                Err(poem::Error::from_string(
+                LoginResponse::from_err(poem::Error::from_string(
                     "Router failed to send signup request to Auth service",
                     poem::http::StatusCode::SERVICE_UNAVAILABLE,
                 ))
@@ -146,20 +191,35 @@ async fn auth_login(body: Body) -> poem::Result<()> {
                 let mut response_buffer: Vec<u8> = Vec::with_capacity(512);
                 if let Err(e) = stream.read_to_end(&mut response_buffer).await {
                     log::error!("[ROUTER] Failed to read signup response: {e}");
+                    return LoginResponse::from_err(poem::Error::from_string(
+                        "Failed to read signup response: {e}",
+                        StatusCode::UNPROCESSABLE_ENTITY,
+                    ));
                 }
-                if let Ok(response) =
-                    serde_cbor::from_slice::<subservices::auth::SignupResponse>(&response_buffer)
+                if let Ok(response) = serde_cbor::from_slice::<
+                    subservices::auth::SignupOrLoginResponse,
+                >(&response_buffer)
                 {
                     log::debug!("[ROUTER] Received response from signup: {response:#?}");
+                    LoginResponse {
+                        err: None,
+                        data: Some(response),
+                    }
                 } else {
                     log::error!("[ROUTER] Failed to deserialise signup response");
+                    LoginResponse::from_err(poem::Error::from_string(
+                        "Failed to deserialise signup response: {e}",
+                        StatusCode::UNPROCESSABLE_ENTITY,
+                    ))
                 }
-                Ok(())
             }
         }
     } else {
         log::error!("[ROUTER] Failed to deserialise Signup request contents!");
-        Ok(())
+        LoginResponse::from_err(poem::Error::from_string(
+            "Failed to read signup request: {e}",
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ))
     }
 }
 

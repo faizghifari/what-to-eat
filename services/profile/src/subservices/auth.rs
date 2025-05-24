@@ -143,44 +143,12 @@ pub struct AuthInfo {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct SignupResponse {
-    access_token: String,
-    refresh_token: String,
-    x_user_uid: String,
+pub struct SignupOrLoginResponse {
+    pub access_token: String,
+    pub refresh_token: String,
+    pub x_user_uid: String,
 }
-impl SignupResponse {
-    fn from_signup_result(signup_result: EmailSignUpResult) -> Self {
-        match signup_result {
-            EmailSignUpResult::SessionResult(session) => Self {
-                access_token: session.access_token,
-                refresh_token: session.refresh_token,
-                x_user_uid: session
-                    .user
-                    .id
-                    .as_hyphenated()
-                    .encode_lower(&mut uuid::Uuid::encode_buffer())
-                    .to_string(),
-            },
-            EmailSignUpResult::ConfirmationResult(confirmation) => Self {
-                access_token: String::new(),
-                refresh_token: String::new(),
-                x_user_uid: confirmation
-                    .id
-                    .as_hyphenated()
-                    .encode_lower(&mut uuid::Uuid::encode_buffer())
-                    .to_string(),
-            },
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct LoginResponse {
-    x_user_uid: String,
-    access_token: String,
-    refresh_token: String,
-}
-impl LoginResponse {
+impl SignupOrLoginResponse {
     fn from_session(session: Session) -> Self {
         Self {
             x_user_uid: session
@@ -191,6 +159,37 @@ impl LoginResponse {
                 .to_string(),
             access_token: session.access_token,
             refresh_token: session.refresh_token,
+        }
+    }
+
+    async fn from_signup_result(
+        signup_result: EmailSignUpResult,
+        signup_info: &SignupInfo,
+        client: &AuthClient,
+    ) -> Option<Self> {
+        match signup_result {
+            EmailSignUpResult::SessionResult(session) => Some(Self {
+                access_token: session.access_token,
+                refresh_token: session.refresh_token,
+                x_user_uid: session
+                    .user
+                    .id
+                    .as_hyphenated()
+                    .encode_lower(&mut uuid::Uuid::encode_buffer())
+                    .to_string(),
+            }),
+            EmailSignUpResult::ConfirmationResult(_) => {
+                let session: Result<Session, AuthError> = client
+                    .login_with_email(&signup_info.email, &signup_info.password)
+                    .await;
+
+                if let Ok(session) = session {
+                    log::debug!("[AUTH:LOGIN] Successfully logged in! Session: {session:#?}");
+                    Some(SignupOrLoginResponse::from_session(session))
+                } else {
+                    None
+                }
+            }
         }
     }
 }
@@ -250,7 +249,8 @@ async fn login(bytes: &[u8], client: AuthClient, mut stream: &Stream) {
 
             if let Ok(session) = session {
                 log::debug!("[AUTH:LOGIN] Successfully logged in! Session: {session:#?}");
-                if let Ok(data) = serde_cbor::to_vec(&LoginResponse::from_session(session)) {
+                if let Ok(data) = serde_cbor::to_vec(&SignupOrLoginResponse::from_session(session))
+                {
                     if let Err(e) = stream.write_all(&data).await {
                         log::error!("[AUTH:LOGIN] Failed to send response to Router: {e}");
                     }
@@ -278,9 +278,22 @@ async fn sign_up(bytes: &[u8], client: AuthClient, mut stream: &Stream) {
 
             if let Ok(signup_result) = success {
                 log::debug!("[AUTH:SIGNUP] Signed up successfully: {signup_result:#?}");
-                if let Ok(data) =
-                    serde_cbor::to_vec(&SignupResponse::from_signup_result(signup_result))
-                {
+                if let Ok(data) = serde_cbor::to_vec(
+                    &SignupOrLoginResponse::from_signup_result(
+                        signup_result,
+                        &signup_info,
+                        &client,
+                    )
+                    .await
+                    .unwrap_or_else(|| {
+                        log::warn!("[AUTH:SIGNUP] Failed to get Auth info.");
+                        SignupOrLoginResponse {
+                            access_token: "".to_string(),
+                            refresh_token: "".to_string(),
+                            x_user_uid: "".to_string(),
+                        }
+                    }),
+                ) {
                     if let Err(e) = stream.write_all(&data).await {
                         log::error!("[AUTH:SIGNUP] Failed to send response to Router: {e}");
                     }

@@ -89,12 +89,14 @@ Responses
 
 class MenuResponse(Menu):
     average_rating: float
+    restaurant: Optional[Restaurant] = None
 
 
 class RestaurantMenuResponse(BaseModel):
     restaurant: Restaurant
     menus: List[MenuResponse]
     distance: float
+    food_matches: Optional[int] = None
 
 
 """

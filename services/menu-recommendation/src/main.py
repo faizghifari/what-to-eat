@@ -163,13 +163,14 @@ def list_matches_restaurant(
         .execute()
     ).data
 
-    filter_restrictions = set([menu_filter.restrictions])
+    filter_restrictions = set(menu_filter.restrictions)
     matches_restaurant_menus = {}
     for menu in menus:
         # TODO: Change string matching between main ingredients and user restrictions and dietary preferences
         main_ingredients = set(
             [ingredients["name"].lower() for ingredients in menu["main_ingredients"]]
         )
+        print(main_ingredients, filter_restrictions, user_dietary_preferences)
 
         # If the main ingredients contains any of the restrictions, skip
         if len((main_ingredients - filter_restrictions)) != len(main_ingredients):
@@ -225,16 +226,35 @@ def list_matches_restaurant(
             del matches_restaurant_menus[restaurant["id"]]
             continue
 
-        restaurant_menu_response = RestaurantMenuResponse(
-            restaurant=Restaurant(**restaurant),
-            menus=[
-                MenuResponse(**menu)
-                for menu in matches_restaurant_menus[restaurant["id"]]
-            ],
-            distance=distance,
-            food_matches=len(matches_restaurant_menus[restaurant["id"]]),
+        # Get the average rating for the menu
+        average_rating = (
+            supabase.table("Rating")
+            .select("rating_value")
+            .eq("menu", menu["id"])
+            .execute()
+        ).data
+        average_rating_value = (
+            sum(rating["rating_value"] for rating in average_rating)
+            / len(average_rating)
+            if average_rating
+            else 0
         )
-        response.append(restaurant_menu_response)
+
+        menu["average_rating"] = average_rating_value
+        del menu["restaurant"]
+        restaurant["location"] = restaurant_location
+
+        response.append(
+            RestaurantMenuResponse(
+                restaurant=Restaurant(**restaurant),
+                menus=[
+                    MenuResponse(**menu)
+                    for menu in matches_restaurant_menus[restaurant["id"]]
+                ],
+                distance=distance,
+                food_matches=len(matches_restaurant_menus[restaurant["id"]]),
+            )
+        )
 
     return response
 

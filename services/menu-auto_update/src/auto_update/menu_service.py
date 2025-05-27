@@ -16,34 +16,43 @@ GOOGLE_GENAI_MODEL = os.environ.get("GOOGLE_GENAI_MODEL")
 google_client = genai.Client()
 model_id = GOOGLE_GENAI_MODEL
 
+
 class NameDescPair(BaseModel):
     name: str
     description: str
 
+
 def get_restaurant_id_by_name(restaurant_name):
-    resp = supabase.table("Restaurant").select("id").eq("name", restaurant_name).execute()
+    resp = (
+        supabase.table("Restaurant").select("id").eq("name", restaurant_name).execute()
+    )
     if resp.data:
         return resp.data[0]["id"]
     return None
 
+
 def delete_menus_by_restaurant_id(restaurant_id):
     supabase.table("Menu").delete().eq("restaurant", restaurant_id).execute()
+
 
 def insert_menus(restaurant_id, menus):
     payloads = []
     for menu in menus:
-        payloads.append({
-            "restaurant": restaurant_id,
-            "name": menu["menu_name"],
-            "description": menu.get("description", ""),
-            "main_ingredients": menu.get("main_ingredients", []),
-            "price": menu["price"],
-        })
+        payloads.append(
+            {
+                "restaurant": restaurant_id,
+                "name": menu["menu_name"],
+                "description": menu.get("description", ""),
+                "main_ingredients": menu.get("main_ingredients", []),
+                "price": menu["price"],
+            }
+        )
     try:
         response = supabase.table("Menu").insert(payloads).execute()
         return response
     except Exception as exception:
         return exception
+
 
 def get_name_and_description_from_llm(menu_name):
     prompt = (
@@ -57,16 +66,20 @@ def get_name_and_description_from_llm(menu_name):
         model=model_id,
         contents=prompt,
         config={
-            'response_mime_type': 'application/json',
-            'response_schema': NameDescPair
-        }
+            "response_mime_type": "application/json",
+            "response_schema": NameDescPair,
+        },
     )
     try:
         result = json.loads(response.candidates[0].content.parts[0].text)
         return result
     except Exception:
         from json import JSONDecodeError
-        raise JSONDecodeError("Failed to parse JSON", response.candidates[0].content.parts[0].text, 0)
+
+        raise JSONDecodeError(
+            "Failed to parse JSON", response.candidates[0].content.parts[0].text, 0
+        )
+
 
 def adjust_menus_with_llm(menus):
     adjusted = []

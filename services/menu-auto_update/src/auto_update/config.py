@@ -2,6 +2,7 @@ import os
 import json
 from typing import List, Dict, Any
 
+
 def read_restaurant_config(config_path: str) -> List[Dict[str, Any]]:
     """Read restaurant config from a JSON file. Raise error if not found."""
     if not os.path.exists(config_path):

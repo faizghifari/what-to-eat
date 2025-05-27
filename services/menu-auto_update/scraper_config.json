@@ -1,27 +1,22 @@
 [
   {
     "url": "https://www.kaist.ac.kr/en/html/campus/053001.html?dvs_cd=fclt",
-    "restaurant_name": "Undergraduate Cafeteria",
-    "restaurant_id": 990
+    "restaurant_name": "Undergraduate Cafeteria"
   },
   {
     "url": "https://www.kaist.ac.kr/en/html/campus/053001.html?dvs_cd=west",
-    "restaurant_name": "West-Campus Student Cafeteria",
-    "restaurant_id": 991
+    "restaurant_name": "West-Campus Student Cafeteria"
   },
   {
     "url": "https://www.kaist.ac.kr/en/html/campus/053001.html?dvs_cd=east1",
-    "restaurant_name": "East-Campus Graduate and Ph.D. Cafeteria",
-    "restaurant_id": 992
+    "restaurant_name": "East-Campus Graduate and Ph.D. Cafeteria"
   },
   {
     "url": "https://www.kaist.ac.kr/en/html/campus/053001.html?dvs_cd=east2",
-    "restaurant_name": "East-Campus Faculty Cafeteria",
-    "restaurant_id": 993
+    "restaurant_name": "East-Campus Faculty Cafeteria"
   },
   {
     "url": "https://www.kaist.ac.kr/en/html/campus/053001.html?dvs_cd=emp",
-    "restaurant_name": "Faculty Cafeteria",
-    "restaurant_id": 990
+    "restaurant_name": "Faculty Cafeteria"
   }
 ]

@@ -18,6 +18,7 @@ ENV/
 Thumbs.db
 
 # Ignore log files
+logs/
 *.log
 
 # Ignore Docker build artifacts

@@ -30,4 +30,4 @@ RUN crontab /app/crontab.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Start cron in the background and tail the log so output is visible and the log file is created if missing
-CMD ["/bin/bash", "-c", "cron && touch /app/logs/cron.log && tail -F /app/logs/cron.log"]
+CMD ["/bin/bash", "-c", "cron && mkdir -p /app/logs && touch /app/logs/cron.log && tail -F /app/logs/cron.log"]

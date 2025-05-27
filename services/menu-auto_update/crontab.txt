@@ -1,0 +1,2 @@
+# Run at 1 AM every day, Asia/Seoul time
+0 1 * * * /app/run_scraper.sh >> /app/cron.log 2>&1

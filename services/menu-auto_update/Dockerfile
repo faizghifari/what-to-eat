@@ -6,7 +6,7 @@ RUN apt-get update && apt-get upgrade -y
 
 # Set timezone to Asia/Seoul
 ENV TZ=Asia/Seoul
-RUN apt-get install -y cron tzdata && \
+RUN apt-get install -y cron tzdata procps && \
     ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # Set working directory
@@ -29,5 +29,5 @@ RUN crontab /app/crontab.txt
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Start cron and keep container running
-CMD ["/bin/bash", "-c", "cron && tail -f /dev/null"]
+# Start cron in the background and tail the log so output is visible and the log file is created if missing
+CMD ["/bin/bash", "-c", "cron && touch /app/logs/cron.log && tail -F /app/logs/cron.log"]

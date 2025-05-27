@@ -35,14 +35,14 @@ services:
 
   menu-recommendation:
     build:
-      context: ./services/menu-recommendation
+      context: ./services/menu
       dockerfile: Dockerfile
     ports:
       - "8000:5000"
     env_file:
-      - ./services/menu-recommendation/.env
+      - ./services/menu/.env
     volumes:
-      - ./services/menu-recommendation/src:/app/src
+      - ./services/menu/src:/app/src
     networks:
       - what-to-eat-network
     command: uvicorn src.main:app --host 0.0.0.0 --port 5000 --reload
@@ -50,10 +50,16 @@ services:
   eat-together:
     build:
       context: ./services/eat-together
+      dockerfile: Dockerfile
     ports:
-      - "5003:5000"
+      - "8001:5000"
+    env_file:
+      - ./services/eat-together/.env
+    volumes:
+      - ./services/eat-together/src:/app/src
     networks:
       - what-to-eat-network
+    command: uvicorn src.main:app --host 0.0.0.0 --port 5000 --reload
 
   profile:
     build:

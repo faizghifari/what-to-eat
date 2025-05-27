@@ -1,5 +1,11 @@
 /services/profile/target
-services/sb.uk
 /services/auth/target
 *.lock
-services/auth/build.rs
+**/build.rs
+
+**/.env
+**/.env.local
+
+__pycache__/
+*.pyc
+

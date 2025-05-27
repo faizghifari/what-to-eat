@@ -13,7 +13,6 @@ use supabase_auth::{
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
 pub const AUTH_SOCKET_PRINTNAME: &str = "w2e_auth.sock";
-
 pub async fn run() -> std::io::Result<()> {
     // Authenticate service with Supabase / launch client
     let client: Result<AuthClient, _> = init_supabase_auth_client();

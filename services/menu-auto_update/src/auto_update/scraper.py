@@ -8,6 +8,7 @@ import requests
 from bs4 import BeautifulSoup
 import re
 import json
+import os
 from typing import List, Dict, Any
 
 # ---------------------- Extraction Helpers ----------------------
@@ -237,28 +238,26 @@ def postprocess_cafeteria_menus(menus: List[Dict[str, Any]], allergy_map: Dict[s
 
 # ---------------------- Scraping Orchestration ----------------------
 
-MENU_SERVICE_HOST = "menu-service:8000"  # Change as needed for your docker-compose setup
-RESTAURANT_ID_MAP = {
-    "Undergraduate Cafeteria": 3,
-    "West-Campus Student Cafeteria": 11,
-    "East-Campus Graduate and Ph.D. Cafeteria": 12,
-    "East-Campus Faculty Cafeteria": 15,
-    "Faculty Cafeteria": 16,
-}
+def read_restaurant_config(config_path: str) -> List[Dict[str, Any]]:
+    """Read restaurant config from a JSON file. Raise error if not found."""
+    if not os.path.exists(config_path):
+        raise FileNotFoundError(f"Config file '{config_path}' not found. Please create it (see scraper_config_example.json for format).")
+    with open(config_path, 'r', encoding='utf-8') as f:
+        return json.load(f)
 
-def get_existing_menus(restaurant_id):
-    url = f"http://{MENU_SERVICE_HOST}/restaurant/{restaurant_id}/menu"
+def get_existing_menus(restaurant_id, menu_service_host):
+    url = f"http://{menu_service_host}/restaurant/{restaurant_id}/menu"
     resp = requests.get(url)
     resp.raise_for_status()
     return resp.json()
 
-def delete_menu(menu_id):
-    url = f"http://{MENU_SERVICE_HOST}/menu/{menu_id}"
+def delete_menu(menu_id, menu_service_host):
+    url = f"http://{menu_service_host}/menu/{menu_id}"
     resp = requests.delete(url)
     resp.raise_for_status()
 
-def post_menu(restaurant_id, menu):
-    url = f"http://{MENU_SERVICE_HOST}/restaurant/{restaurant_id}/menu"
+def post_menu(restaurant_id, menu, menu_service_host):
+    url = f"http://{menu_service_host}/restaurant/{restaurant_id}/menu"
     payload = {
         "name": menu["menu_name"],
         "description": menu.get("description", ""),
@@ -269,45 +268,51 @@ def post_menu(restaurant_id, menu):
     resp.raise_for_status()
     return resp.json()
 
-def sync_menus_to_service(scraped_data):
+def sync_menus_to_service(scraped_data, menu_service_host):
     for entry in scraped_data:
         restaurant_name = entry["restaurant_name"]
-        restaurant_id = RESTAURANT_ID_MAP.get(restaurant_name)
+        restaurant_id = entry["restaurant_id"]
         if not restaurant_id:
             print(f"Unknown restaurant: {restaurant_name}, skipping...")
             continue
         print(f"Syncing menus for {restaurant_name} (ID: {restaurant_id})...")
         # 1. List all current menus
         try:
-            current_menus = get_existing_menus(restaurant_id)
+            current_menus = get_existing_menus(restaurant_id, menu_service_host)
         except Exception as e:
             print(f"Failed to list menus for {restaurant_name}: {e}")
             continue
         # 2. Delete all current menus
         for m in current_menus:
             try:
-                delete_menu(m["id"])
+                delete_menu(m["id"], menu_service_host)
             except Exception as e:
                 print(f"Failed to delete menu {m['id']}: {e}")
         # 3. Insert all scraped menus
         for menu in entry["menus"]:
             try:
-                post_menu(restaurant_id, menu)
+                post_menu(restaurant_id, menu, menu_service_host)
             except Exception as e:
                 print(f"Failed to insert menu {menu.get('menu_name')}: {e}")
 
 def main():
     """Main entry point: scrape all URLs and sync to menu service API."""
-    urls = read_urls('kaist_web_list.txt')
+    config = read_restaurant_config('scraper_config.json')
+    menu_service_host = os.environ.get('MENU_SERVICE_HOST', 'menu-service:8000')
     all_data = []
-    for url in urls:
+    for entry in config:
+        url = entry['url']
+        restaurant_name = entry['restaurant_name']
+        restaurant_id = entry['restaurant_id']
         print(f'Scraping {url}...')
         try:
             data = scrape_kaist_menus(url)
+            data['restaurant_name'] = restaurant_name
+            data['restaurant_id'] = restaurant_id
             all_data.append(data)
         except Exception as e:
             print(f'Error scraping {url}: {e}')
-    sync_menus_to_service(all_data)
+    sync_menus_to_service(all_data, menu_service_host)
     print('Scraping and sync complete.')
 
 if __name__ == '__main__':

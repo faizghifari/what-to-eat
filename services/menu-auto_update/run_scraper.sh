@@ -1,4 +1,4 @@
 #!/bin/bash
 cd /app
 export PYTHONPATH=$(pwd)/src:$PYTHONPATH
-python ./src/auto_update/scraper.py
+/usr/local/bin/python ./src/auto_update/scraper.py

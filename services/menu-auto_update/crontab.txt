@@ -1,2 +1,3 @@
-# Run at 1 AM every day, Asia/Seoul time
-0 1 * * * /app/run_scraper.sh >> /app/cron.log 2>&1
+MAILTO=""
+0 1 * * * echo "CRON LOG $(date)" >> /app/logs/cron.log 2>&1
+0 1 * * * /app/run_scraper.sh >> /app/logs/cron.log 2>&1

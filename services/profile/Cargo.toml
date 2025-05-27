@@ -4,19 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-# Supabase
-supabase_rs = "0.4.2"
-uuid = "1.17.0"
-# Async
-tokio = {version= "1.45.0", features=["net", "rt-multi-thread"]}
-# HTTP Framework (raw TCP is easier imo)
-poem = "3.1.10"
-# Serialisation/deserialisation
-serde = { version = "1.0.219", features = ["derive"] }
-serde_json = "1.0.140"
-# Logging
-log = "0.4.27"
-simple_logger = "5.0.0"
+# profile
 
 [profile.dev]
 lto = "off"
@@ -31,3 +19,11 @@ lto = "fat"
 panic = "abort"
 strip = "symbols"
 opt-level = 3
+
+# Benchmarks
+#[dev-dependencies]
+#criterion = "0.5"
+
+#[[bench]]
+#name = "bench_name"
+#harness = false

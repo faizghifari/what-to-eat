@@ -36,10 +36,16 @@ services:
   menu-recommendation:
     build:
       context: ./services/menu-recommendation
+      dockerfile: Dockerfile
     ports:
-      - "5002:5000"
+      - "8000:5000"
+    env_file:
+      - ./services/menu-recommendation/.env
+    volumes:
+      - ./services/menu-recommendation/src:/app/src
     networks:
       - what-to-eat-network
+    command: uvicorn src.main:app --host 0.0.0.0 --port 5000 --reload
 
   eat-together:
     build:

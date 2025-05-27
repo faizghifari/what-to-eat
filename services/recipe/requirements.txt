@@ -3,7 +3,7 @@ uvicorn
 asyncpg
 supabase
 python-dotenv
-google-generativeai
+google-genai
 httpx
 pytest
 pytest-cov

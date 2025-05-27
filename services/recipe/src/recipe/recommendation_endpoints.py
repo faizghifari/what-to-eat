@@ -1,6 +1,8 @@
 import json
 
-from fastapi import APIRouter
+from typing import Annotated
+
+from fastapi import APIRouter, Header, HTTPException
 from fastapi.responses import JSONResponse
 
 from recipe.utils import supabase, get_user_profile, extract_names, filter_recipes, GOOGLE_GENAI_MODEL
@@ -8,9 +10,9 @@ from recipe.models import Recipe
 
 router = APIRouter()
 
-@router.post("/recipe/recommend_recipes")
-def recommend_recipes(user_id: str):
-    profile = get_user_profile(user_id)
+@router.get("/recipe/matches")
+def recommend_recipes(x_user_uuid: Annotated[str, Header(alias="X-User-uuid")]):
+    profile = get_user_profile(x_user_uuid)
     restrictions = extract_names(profile.get("dietary_restrictions", {}))
     available_tools = extract_names(profile.get("available_tools", {}))
     available_ingredients = extract_names(profile.get("available_ingredients", {}))
@@ -20,9 +22,9 @@ def recommend_recipes(user_id: str):
         return JSONResponse(status_code=200, content={"message": "No recipes found. Search the internet?", "results": []})
     return {"results": filtered}
 
-@router.post("/recipe/recommend_recipes_search")
-def recommend_recipes_search(user_id: str):
-    profile = get_user_profile(user_id)
+@router.get("/recipe/matches_web")
+def recommend_recipes_search(x_user_uuid: Annotated[str, Header(alias="X-User-uuid")]):
+    profile = get_user_profile(x_user_uuid)
     restrictions = extract_names(profile.get("dietary_restrictions", {}))
     available_tools = extract_names(profile.get("available_tools", {}))
     available_ingredients = extract_names(profile.get("available_ingredients", {}))
@@ -51,6 +53,7 @@ def recommend_recipes_search(user_id: str):
     prompt_parts = (
         "Given this web search result, extract the recipes in JSON format:\n"
         f"{recipes}\n"
+        "If there are incomplete attributes such as description about ingredients (quantity, etc.) estimated_price (must be in Korean won), and estimated_time (in minutes), please fill them with the best guess. For image_url, keep it empty.\n"
         "Return results as JSON according to the schema. "
     )
     response = client.models.generate_content(
@@ -75,7 +78,7 @@ def recommend_recipes_search(user_id: str):
             return {
                 "results": stored.data,
             }
-        except Exception:
+        except Exception as e:
             detail = getattr(e, 'message', str(e))
             if hasattr(e, 'args') and e.args and isinstance(e.args[0], dict):
                 err = e.args[0]

@@ -6,10 +6,6 @@ KAIST Cafeteria Menu Scraper
 
 import requests
 from bs4 import BeautifulSoup
-import re
-import json
-import os
-from typing import List, Dict, Any
 
 from auto_update.config import read_restaurant_config
 from auto_update.menu_service import (
@@ -21,7 +17,6 @@ from auto_update.menu_service import (
 from auto_update.extract_helpers import (
     extract_restaurant_name,
     extract_allergy_mapping,
-    split_menu_by_br,
 )
 from auto_update.menu_processing import extract_menus, postprocess_cafeteria_menus
 

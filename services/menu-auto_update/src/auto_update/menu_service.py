@@ -1,6 +1,5 @@
 import os
 from dotenv import load_dotenv
-import requests
 from supabase import create_client, Client
 from pydantic import BaseModel
 from google import genai

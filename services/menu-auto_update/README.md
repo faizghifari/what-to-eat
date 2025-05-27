@@ -1,21 +1,40 @@
 # KAIST Menu Auto Update Service
 
-This directory contains a Dockerized Python scraper and auto-update for KAIST cafeteria menus.
+This service scrapes KAIST cafeteria menus, enhances menu names and descriptions using Google GenAI, and syncs the results directly to a Supabase database.
+
+## Features
+
+- Scrapes menu, allergy, and price data from KAIST cafeteria web pages.
+- Uses Google GenAI (Gemini) to generate improved menu names and descriptions.
+- Syncs data directly to Supabase (no REST API service required).
+- Dockerized and runs on a schedule via cron.
 
 ## Files
 
-- `kaist_menu_scraper.py`: Main scraping script (in `src/auto_update/`)
-- `kaist_web_list.txt`: List of URLs to scrape
+- `src/auto_update/scraper.py`: Main scraping and sync script
+- `scraper_config.json`: List of restaurant URLs and names to scrape
 - `Dockerfile`: Container definition
 - `run_scraper.sh`: Script run by cron to execute the scraper
 - `crontab.txt`: Crontab entry for running the scraper daily at 1 AM KST
+- `.env`: Environment variables for Supabase and Google GenAI credentials
+
+## Environment Variables
+
+Create a `.env` file in the project root with the following (see `.env.example` for an example):
+
+```
+SUPABASE_URL=... # Your Supabase project URL
+SUPABASE_KEY=... # Your Supabase service role key
+GOOGLE_API_KEY=... # Your Google GenAI API key
+GOOGLE_GENAI_MODEL=... # e.g. gemini-2.0-pro
+```
 
 ## Build the Docker Image
 
 From this directory, run:
 
 ```
-docker build -t kaist-menu-scraper .
+docker build -t menu-auto_update-service .
 ```
 
 ## Run the Container (with Cron Inside)
@@ -23,36 +42,32 @@ docker build -t kaist-menu-scraper .
 To start the container (it will run the scraper daily at 1 AM KST):
 
 ```
-docker run -d --name kaist-menu-scraper --restart unless-stopped \
+docker run -d --name menu-auto_update-service --restart unless-stopped \
   -v %cd%/src:/app/src \
   -v %cd%:/app \
-  kaist-menu-scraper
+  --env-file .env \
+  menu-auto_update-service
 ```
 
 - On Linux/macOS, replace `%cd%` with `$(pwd)`.
 - The container will keep running and execute the scraper daily at 1 AM KST (Asia/Seoul time).
-- Output and logs will be in the container's `/app/src/auto_update/kaist_menu_data.json` and `/app/cron.log` (also mapped to your host).
+- Output and logs will be in the container's `/app/cron.log` (also mapped to your host).
 
 ## Manual Run (Optional)
 
 To run the scraper immediately (without waiting for cron):
 
 ```
-docker exec kaist-menu-scraper /app/run_scraper.sh
+docker exec menu-auto_update-service /app/run_scraper.sh
 ```
 
 ## Stopping/Removing the Container
 
 ```
-docker stop kaist-menu-scraper
+docker stop menu-auto_update-service
 # To remove:
-docker rm kaist-menu-scraper
+docker rm menu-auto_update-service
 ```
-
-## Output
-
-- The output file `kaist_menu_data.json` will be written to the `src/auto_update/` directory.
-- Cron logs are in `cron.log` in the container (and mapped to your host).
 
 ---
 

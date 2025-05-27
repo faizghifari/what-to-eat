@@ -1,28 +1,33 @@
 # Dockerfile for KAIST Menu Scraper
+FROM python:3.12-slim
 
-FROM python:3.11-slim
+# Upgrade system packages to fix vulnerabilities
+RUN apt-get update && apt-get upgrade -y
 
 # Set timezone to Asia/Seoul
 ENV TZ=Asia/Seoul
-RUN apt-get update && \
-    apt-get install -y cron tzdata && \
-    ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
-    pip install --no-cache-dir requests beautifulsoup4 && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN apt-get install -y cron tzdata && \
+    ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # Set working directory
 WORKDIR /app
 
-# Copy scripts and input files
-COPY src/kaist_menu_scraper.py ./src/kaist_menu_scraper.py
-COPY kaist_web_list.txt ./kaist_web_list.txt
+# Copy source code and config
+COPY src/ ./src/
+COPY scraper_config.json ./scraper_config.json
 COPY run_scraper.sh ./run_scraper.sh
 COPY crontab.txt ./crontab.txt
+COPY .env ./
+# Copy requirements.txt before installing dependencies
+COPY requirements.txt ./
 
 RUN chmod +x /app/run_scraper.sh
 
 # Install crontab
 RUN crontab /app/crontab.txt
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Start cron and keep container running
 CMD ["/bin/bash", "-c", "cron && tail -f /dev/null"]

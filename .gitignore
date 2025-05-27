@@ -1,5 +1,11 @@
+/services/profile/target
+/services/auth/target
+*.lock
+**/build.rs
+
 **/.env
 **/.env.local
 
 __pycache__/
 *.pyc
+

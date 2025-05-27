@@ -1,73 +1,54 @@
-version: '3.8'
-
 services:
+  auth-service:
+    build:
+      context: ./services/auth
+    ports:
+      - "8000:8000"
+    networks:
+      - what-to-eat-network
   menu-service:
     build:
-      context: ./services/menu-service
+      context: ./services/menu
     ports:
-      - "3001:3000"
+      - "8001:8000"
     networks:
       - what-to-eat-network
 
-  user-service:
+  recipe-service:
     build:
-      context: ./services/user-service
+      context: ./services/recipe
     ports:
-      - "3002:3000"
+      - "8002:8000"
     networks:
       - what-to-eat-network
 
-  order-service:
-    build:
-      context: ./services/order-service
-    ports:
-      - "3003:3000"
-    networks:
-      - what-to-eat-network
-
-  recipe-recommendation:
-    build:
-      context: ./services/recipe-recommendation
-    ports:
-      - "5001:5000"
-    networks:
-      - what-to-eat-network
-
-  menu-recommendation:
-    build:
-      context: ./services/menu-recommendation
-      dockerfile: Dockerfile
-    ports:
-      - "8000:5000"
-    env_file:
-      - ./services/menu-recommendation/.env
-    volumes:
-      - ./services/menu-recommendation/src:/app/src
-    networks:
-      - what-to-eat-network
-    command: uvicorn src.main:app --host 0.0.0.0 --port 5000 --reload
-
-  eat-together:
+  ets-service:
     build:
       context: ./services/eat-together
     ports:
-      - "5003:5000"
+      - "8004:8000"
     networks:
       - what-to-eat-network
 
-  profile:
+  profile-service :
     build:
       context: ./services/profile
     ports:
-      - "5004:5000"
+      - "8005:8000"
     networks:
       - what-to-eat-network
 
-  user-interface:
+  ui-service:
     build:
       context: ./services/user-interface
     ports:
-      - "3000:3000"
+      - "8006:8000"
+    networks:
+      - what-to-eat-network
+
+  menu-auto_update-service:
+    build:
+      context: ./services/menu-auto_update
     networks:
       - what-to-eat-network
 

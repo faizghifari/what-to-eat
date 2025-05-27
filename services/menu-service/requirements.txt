@@ -1,4 +1,0 @@
-supabase==2.15.1
-fastapi==0.115.12
-fastapi-cli==0.0.7
-dotenv==1.1.0

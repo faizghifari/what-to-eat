@@ -34,14 +34,13 @@ class APIClient:
         return {
             "Authorization": f'Bearer {session.get("access_token", "")}',
             "Content-Type": "application/json",
-            "X-User-Uid": session.get("user_uuid"),
+            "X-User-Uuid": session.get("user_uuid"),
         }
 
     @staticmethod
     def get_access_token_params():
         return {
             "access_token": session.get("access_token", ""),
-            "refresh_token": session.get("refresh_token", ""),
         }
 
     @staticmethod

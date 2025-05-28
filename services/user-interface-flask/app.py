@@ -60,7 +60,7 @@ def signup():
     if request.method == "POST":
         email = request.form.get("email")
         password = request.form.get("password")
-        password2 = request.form.get("confirm-password")
+        password2 = request.form.get("confirm_password")
         try:
             result = APIClient.signup(email, password, password2)
             if (

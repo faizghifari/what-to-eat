@@ -167,6 +167,7 @@ async fn forward_to_service(
     }
     let io: TokioIo<TcpStream> = TokioIo::new(stream.unwrap());
 
+
     // Create HTTP Client
     let handshake_success: Result<_, _> =
         handshake::<TokioIo<TcpStream>, hyper::body::Incoming>(io).await;
@@ -176,10 +177,14 @@ async fn forward_to_service(
     }
     let (mut sender, conn): (SendRequest<_>, Connection<_, _>) = handshake_success.unwrap();
 
-    if let Err(e) = conn.await {
-        log::error!("Failed to connect with {uri}. Reason: {e}");
-        return response::<&str>(None, StatusCode::INTERNAL_SERVER_ERROR);
-    }
+
+    // Spawn the connection in the background instead of awaiting it
+    // This allows the sender to be used immediately
+    let _ = tokio::spawn(async move {
+        if let Err(e) = conn.await {
+            log::error!("Connection error with {uri}: {e}");
+        }
+    });
 
     // Forward request and wait for response
     let incoming_response: Result<_, _> = sender.send_request(request).await;
@@ -188,11 +193,13 @@ async fn forward_to_service(
         return response::<&str>(None, StatusCode::INTERNAL_SERVER_ERROR);
     }
 
+
     // Translate incoming response to outgoing response
     let received_response: Response<hyper::body::Incoming> = incoming_response.unwrap();
     let status: StatusCode = received_response.status();
     let headers: HeaderMap = received_response.headers().clone();
     let body: BoxBody<_, _> = received_response.boxed();
+
 
     let mut outgoing_response: Response<_> = Response::new(body);
     *outgoing_response.status_mut() = status;

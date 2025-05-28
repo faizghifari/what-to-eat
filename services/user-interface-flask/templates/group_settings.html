@@ -1,0 +1,368 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('eat_together') }}">Eat Together</a></li>
+                    <li class="breadcrumb-item active">Group Settings</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+    <div class="row mb-4">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2>Group Settings</h2>
+                    <p class="text-muted">Group Code: <span class="fw-bold">{{ group.group.group_code }}</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title mb-4">Group Info</h3>
+                    <form method="post" action="{{ url_for('update_group_info', id=group.id) }}">
+                        <div class="mb-3">
+                            <label class="form-label">Group Name</label>
+                            <input type="text" class="form-control" value="{{ group.group.group_name }}" readonly>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title mb-4">Members</h3>
+                    <div class="mb-4">
+                        <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#inviteMemberModal">Invite Member</button>
+                    </div>
+                    <div class="members-list">
+                        {% for member in group.members %}
+                        <div class="preference-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="me-2">{{ member.user.email }}</span>
+                                {% if member.role == "leader" %}
+                                <span class="badge bg-primary">Leader</span>
+                                {% endif %}
+                            </div>
+                            {% if role == "leader" and member.role != "leader" %}
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-outline-danger" onclick="handleRemoveMember('{{ member.id }}')">Remove</button>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title mb-4">Group Guest Preferences & Restrictions</h3>
+                    <p class="text-muted mb-4">These will be combined with individual member preferences when making recommendations</p>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="preference-section">
+                                <h5 class="mb-3">Guest Preferences</h5>
+                                <div class="mb-3">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="guestPreference" placeholder="Add a preference...">
+                                        <button class="btn btn-outline-primary" onclick="addGuestPreference()">Add</button>
+                                    </div>
+                                </div>
+                                <div id="guestPreferencesList" class="preferences-list">
+                                    {% if group.group.guest_preferences %}
+                                        {% for guest_prefs in group.group.guest_preferences %}
+                                            {% for pref in guest_prefs %}
+                                            <div class="preference-item d-flex justify-content-between align-items-center mb-2">
+                                                <span>{{ pref.name }}</span>
+                                                <button class="btn btn-sm btn-outline-danger" onclick="removeGuestPreference(this)">Remove</button>
+                                            </div>
+                                            {% endfor %}
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="preference-section">
+                                <h5 class="mb-3">Guest Restrictions</h5>
+                                <div class="mb-3">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="guestRestriction" placeholder="Add a restriction...">
+                                        <button class="btn btn-outline-primary" onclick="addGuestRestriction()">Add</button>
+                                    </div>
+                                </div>
+                                <div id="guestRestrictionsList" class="restrictions-list">
+                                    {% if group.group.guest_restrictions %}
+                                        {% for guest_rests in group.group.guest_restrictions %}
+                                            {% for rest in guest_rests %}
+                                            <div class="preference-item d-flex justify-content-between align-items-center mb-2">
+                                                <span>{{ rest.name }}</span>
+                                                <button class="btn btn-sm btn-outline-danger" onclick="removeGuestRestriction(this)">Remove</button>
+                                            </div>
+                                            {% endfor %}
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button class="btn btn-secondary" onclick="resetGuestPreferencesRestrictions()">Reset</button>
+                        <button class="btn btn-primary" onclick="saveGuestPreferencesRestrictions()">Save Changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card border-danger">
+                <div class="card-body">
+                    <h3 class="card-title text-danger mb-4">Danger Zone</h3>
+                    {% if role == "leader" %}
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-1">Delete Group</h5>
+                            <p class="text-muted mb-0">This action cannot be undone</p>
+                        </div>
+                        <button class="btn btn-danger" onclick="handleDeleteGroup()">Delete Group</button>
+                    </div>
+                    {% else %}
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-1">Leave Group</h5>
+                            <p class="text-muted mb-0">You will no longer have access to this group</p>
+                        </div>
+                        <button class="btn btn-outline-danger" onclick="handleLeaveGroup()">Leave Group</button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Invite Member Modal -->
+<div class="modal fade" id="inviteMemberModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Invite Member</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Share this code with others to join the group</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" value="{{ group.group.group_code }}" readonly>
+                        <button class="btn btn-outline-primary">Copy</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const groupId = {{ group.group.id }};
+
+function addGuestPreference() {
+    const input = document.getElementById('guestPreference');
+    const value = input.value.trim();
+    if (!value) return;
+
+    const listItem = document.createElement('div');
+    listItem.className = 'preference-item d-flex justify-content-between align-items-center mb-2';
+    listItem.innerHTML = `
+        <span>${value}</span>
+        <button class="btn btn-sm btn-outline-danger" onclick="removeGuestPreference(this)">Remove</button>
+    `;
+
+    document.getElementById('guestPreferencesList').appendChild(listItem);
+    input.value = '';
+}
+
+function addGuestRestriction() {
+    const input = document.getElementById('guestRestriction');
+    const value = input.value.trim();
+    if (!value) return;
+
+    const listItem = document.createElement('div');
+    listItem.className = 'preference-item d-flex justify-content-between align-items-center mb-2';
+    listItem.innerHTML = `
+        <span>${value}</span>
+        <button class="btn btn-sm btn-outline-danger" onclick="removeGuestRestriction(this)">Remove</button>
+    `;
+
+    document.getElementById('guestRestrictionsList').appendChild(listItem);
+    input.value = '';
+}
+
+function removeGuestPreference(button) {
+    button.closest('.preference-item').remove();
+}
+
+function removeGuestRestriction(button) {
+    button.closest('.preference-item').remove();
+}
+
+function getGuestPreferences() {
+    return Array.from(document.querySelectorAll('#guestPreferencesList .preference-item span'))
+        .map(span => span.textContent);
+}
+
+function getGuestRestrictions() {
+    return Array.from(document.querySelectorAll('#guestRestrictionsList .preference-item span'))
+        .map(span => span.textContent);
+}
+
+function resetGuestPreferencesRestrictions() {
+    document.getElementById('guestPreferencesList').innerHTML = '';
+    document.getElementById('guestRestrictionsList').innerHTML = '';
+}
+
+async function saveGuestPreferencesRestrictions() {
+    const preferences = getGuestPreferences();
+    const restrictions = getGuestRestrictions();
+
+    console.log('preferences:', preferences);
+    console.log('restrictions:', restrictions);
+
+    try {
+        const response = await fetch(`/api/eat-together/${groupId}/update-guest`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                guest_preferences: [preferences.map(pref => ({ name: pref, description: "" }))],
+                guest_restrictions: [restrictions.map(rest => ({ name: rest, description: "" }))]
+            })
+        });
+
+        if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.error || 'Failed to update preferences');
+        }
+
+        alert('Changes saved successfully!');
+        window.location.reload(); // Reload to show updated preferences
+    } catch (error) {
+        alert(error.message || 'Failed to save changes. Please try again.');
+        console.error('Error:', error);
+    }
+}
+
+async function handleLeaveGroup() {
+    if (!confirm('Are you sure you want to leave this group? You will no longer have access to it.')) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/eat-together/member/leave', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.error || 'Failed to leave group');
+        }
+
+        window.location.href = '/eat-together';  // Redirect to eat together page
+    } catch (error) {
+        alert(error.message || 'Failed to leave group. Please try again.');
+        console.error('Error:', error);
+    }
+}
+
+async function handleDeleteGroup() {
+    if (!confirm('Are you sure you want to delete this group? This action cannot be undone.')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/eat-together/${groupId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.error || 'Failed to delete group');
+        }
+
+        window.location.href = '/eat-together';  // Redirect to eat together page
+    } catch (error) {
+        alert(error.message || 'Failed to delete group. Please try again.');
+        console.error('Error:', error);
+    }
+}
+
+async function handleRemoveMember(memberId) {
+    if (!confirm('Are you sure you want to remove this member from the group?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/eat-together/${groupId}/remove-member/${memberId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.error || 'Failed to remove member');
+        }
+
+        window.location.reload();  // Reload to update member list
+    } catch (error) {
+        alert(error.message || 'Failed to remove member. Please try again.');
+        console.error('Error:', error);
+    }
+}
+
+// Add enter key support for inputs
+document.getElementById('guestPreference').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        addGuestPreference();
+    }
+});
+
+document.getElementById('guestRestriction').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        addGuestRestriction();
+    }
+});
+</script>
+{% endblock %}

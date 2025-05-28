@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    .rating {
+        font-size: 24px;
+        margin-bottom: 8px;
+    }
+    .rating-star {
+        margin-right: 5px;
+        transition: color 0.2s;
+    }
+    .rating-star:hover {
+        color: #ffd700 !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('food_home') }}">Food</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('restaurant_detail', id=menu.restaurant.id) }}">{{ menu.restaurant.name }}</a></li>
+                    <li class="breadcrumb-item active">{{ menu.name }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <img src="{{ menu.image_url }}" class="img-fluid rounded" alt="Menu Item">
+        </div>
+        <div class="col-md-6">
+            <h2>{{ menu.name }}</h2>
+            <p class="text-muted">{{ menu.restaurant.name }}</p>
+            <h4 class="text-primary mb-2">${{ menu.price }}</h4>
+            <p class="text-muted mb-3">
+                <i class="fas fa-star" style="color: gold"></i> 
+                {{ menu.average_rating}}
+            </p>
+
+            <div class="mb-4">
+                <h5>Description</h5>
+                <p>{{ menu.description }}</p>
+            </div>
+
+            <div class="mb-4" id="ratingSection">
+                <h5>Rate & Review this Menu</h5>
+                <div class="rating mb-2" id="starContainer">
+                    {% for i in range(1, 6) %}
+                    <i class="fas fa-star rating-star" id="star-{{ i }}" data-rating="{{ i }}" style="cursor: pointer; color: {% if menu.user_rating and i <= menu.user_rating %}gold{% else %}gray{% endif %}"></i>
+                    {% endfor %}
+                </div>
+                <div class="form-group mb-3">
+                    <textarea class="form-control" id="reviewText" rows="3" placeholder="Write your review here (optional)">{{ menu.user_review }}</textarea>
+                </div>
+                <button class="btn btn-primary" id="submitReview">Submit Review</button>
+            </div>
+
+            <div class="mb-4">
+                <h5>Main Ingredients</h5>
+                <div class="row">
+                    {% for ingredient in menu.main_ingredients %}
+                    <div class="col-6">
+                        <p>{{ ingredient.name }}</p>
+                        <p>{{ ingredient.description}}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/menu_detail.js') }}"></script>
+{% endblock %}

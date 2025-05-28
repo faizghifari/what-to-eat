@@ -212,6 +212,7 @@ pub async fn verify(
     let user_id: uuid::Uuid = get_uuid_from_request(request)?;
     let access_token: &str = get_access_token_from_request(request)?;
 
+
     // Get user info from DB
     let user: Result<User, _> = auth_client.get_user(access_token).await;
     if user.is_ok_and(|user| user.id == user_id) {
@@ -282,12 +283,14 @@ pub enum Reason {
     InvalidCredentials,
     InvalidUserId,
     InvalidAccessToken,
+
 }
 impl std::fmt::Display for Reason {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Reason::InvalidCredentials => write!(f, "Invalid Credentials"),
             Reason::InvalidUserId | Reason::InvalidAccessToken => write!(f, "Invalid Headers"),
+
         }
     }
 }

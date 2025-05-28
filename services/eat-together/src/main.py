@@ -12,11 +12,15 @@ from models import (
     User,
     GroupMember,
     EatTogetherGroup,
+    Restaurant,
+    Location,
     CreateEatTogetherGroupRequest,
     AddMemberRequest,
+    JoinEatTogetherGroupRequest,
     UpdateGuestPreferenceRestrictionsRequest,
     EatTogetherMemberResponse,
-    Restaurant,
+    MenuResponse,
+    RestaurantMenuResponse,
 )
 
 app = FastAPI()
@@ -83,24 +87,6 @@ def create_group(
     return EatTogetherGroup(**eat_together_group)
 
 
-@app.delete("/eat-together/{group_id}", status_code=204)
-def delete_group(group_id: int):
-    # Check if the group exists
-    group = (
-        supabase.table("EatTogetherGroup").select("*").eq("id", group_id).execute().data
-    )
-    if not group:
-        raise HTTPException(status_code=404, detail="Group not found")
-
-    # Delete all memberships associated with the group
-    supabase.table("UserGroup").delete().eq("group", group_id).execute()
-
-    # Delete the group
-    supabase.table("EatTogetherGroup").delete().eq("id", group_id).execute()
-
-    return 204, None
-
-
 @app.get("/eat-together")
 def list_all_groups():
     # Fetch all groups from the database
@@ -112,6 +98,90 @@ def list_all_groups():
         group["leader"] = User(uuid=user.id, email=user.email or "")
 
     return [EatTogetherGroup(**group) for group in groups]
+
+
+@app.post("/eat-together/join")
+def join_group_by_code(
+    x_user_uuid: Annotated[str, Header()], body: JoinEatTogetherGroupRequest
+):
+    # Check if the group exists
+    group = (
+        supabase.table("EatTogetherGroup")
+        .select("*")
+        .eq("group_code", body.group_code)
+        .execute()
+        .data
+    )
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+
+    group = group[0]
+
+    # Insert membership for the new member
+    new_membership = {
+        "user": x_user_uuid,
+        "group": group["id"],
+        "role": "member",
+    }
+    supabase.table("UserGroup").insert(new_membership).execute()
+
+    # Fetch the updated user group with the new member
+    members = (
+        supabase.table("UserGroup").select("*").eq("group", group["id"]).execute().data
+    )
+
+    members = [
+        GroupMember(
+            id=member["id"],
+            user=User(
+                uuid=member["user"],
+                email=supabase.auth.admin.get_user_by_id(member["user"]).user.email,
+            ),
+            role=member["role"],
+        )
+        for member in members
+    ]
+
+    leader_user = supabase.auth.admin.get_user_by_id(x_user_uuid).user
+    group["leader"] = User(uuid=leader_user.id, email=leader_user.email)
+    return EatTogetherMemberResponse(
+        group=EatTogetherGroup(**group),
+        members=members,
+    )
+
+
+@app.delete("/eat-together/leave", status_code=204)
+def leave_group(x_user_uuid: Annotated[str, Header()]):
+    # Fetch the groups where the user is a member
+    membership = (
+        supabase.table("UserGroup").select("*").eq("user", x_user_uuid).execute().data
+    )
+
+    if not membership:
+        raise HTTPException(status_code=404, detail="User is not a member of any group")
+
+    group_id = membership[0]["group"]
+
+    # Check if the user is the group leader
+    group = (
+        supabase.table("EatTogetherGroup").select("*").eq("id", group_id).execute().data
+    )
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+
+    group = group[0]
+
+    if x_user_uuid == group["leader"]:
+        raise HTTPException(
+            status_code=403, detail="Group leader cannot leave the group"
+        )
+
+    # Delete the membership
+    supabase.table("UserGroup").delete().eq("user", x_user_uuid).eq(
+        "group", group_id
+    ).execute()
+
+    return None
 
 
 @app.get("/eat-together/group/{group_code}")
@@ -165,7 +235,7 @@ def get_my_group(x_user_uuid: Annotated[str, Header()]):
     )
 
     if not membership:
-        raise HTTPException(status_code=404, detail="No groups found for this user")
+        return {}
 
     group_id = membership[0]["group"]
 
@@ -260,8 +330,7 @@ def add_member_to_group(
             id=member["id"],
             user=User(
                 uuid=member["user"],
-                email=supabase.auth.admin.get_user_by_id(member["user"]).user.email
-                or "",
+                email=supabase.auth.admin.get_user_by_id(member["user"]).user.email,
             ),
             role=member["role"],
         )
@@ -269,7 +338,7 @@ def add_member_to_group(
     ]
 
     leader_user = supabase.auth.admin.get_user_by_id(x_user_uuid).user
-    group["leader"] = User(uuid=leader_user.id, email=leader_user.email or "")
+    group["leader"] = User(uuid=leader_user.id, email=leader_user.email)
     return EatTogetherMemberResponse(
         group=EatTogetherGroup(**group),
         members=members,
@@ -349,10 +418,6 @@ def update_guest_preferences_restrictions(
         raise HTTPException(status_code=404, detail="Group not found")
 
     group = group[0]
-
-    # Check if the user is the group leader
-    if x_user_uuid != group["leader"]:
-        raise HTTPException(status_code=403, detail="User is not the group leader")
 
     # Update the group guest preferences and restrictions
     group["guest_preferences"] = [
@@ -471,9 +536,64 @@ def get_food_matches(x_user_uuid: Annotated[str, Header()], group_id: int):
         .data
     )
 
-    # Return the list of matching restaurants
-    restaurant_objs = [Restaurant(**r) for r in restaurants]
-    return restaurant_objs
+    response = []
+    for restaurant in restaurants:
+        for menu in matches_restaurant_menus[restaurant["id"]]:
+            average_rating = (
+                supabase.table("Rating")
+                .select("rating_value")
+                .eq("menu", menu["id"])
+                .execute()
+            ).data
+            average_rating_value = (
+                sum(rating["rating_value"] for rating in average_rating)
+                / len(average_rating)
+                if average_rating
+                else 0
+            )
+
+            menu["average_rating"] = average_rating_value
+            menu["restaurant"] = None
+
+        restaurant["location"] = Location(
+            **(
+                supabase.table("Location")
+                .select("*")
+                .eq("id", restaurant["location"])
+                .execute()
+            ).data[0]
+        )
+
+        response.append(
+            RestaurantMenuResponse(
+                restaurant=Restaurant(**restaurant),
+                menus=[
+                    MenuResponse(**menu)
+                    for menu in matches_restaurant_menus[restaurant["id"]]
+                ],
+                food_matches=len(matches_restaurant_menus[restaurant["id"]]),
+            )
+        )
+
+    return response
+
+
+@app.delete("/eat-together/{group_id}", status_code=204)
+def delete_group(group_id: int):
+    # Check if the group exists
+    group = (
+        supabase.table("EatTogetherGroup").select("*").eq("id", group_id).execute().data
+    )
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+
+    # Delete all memberships associated with the group
+    supabase.table("UserGroup").delete().eq("group", group_id).execute()
+
+    # Delete the group
+    supabase.table("EatTogetherGroup").delete().eq("id", group_id).execute()
+
+    return None
 
 
 """

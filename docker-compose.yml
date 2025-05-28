@@ -2,51 +2,53 @@ services:
   auth-service:
     build:
       context: ./services/auth
+      dockerfile: Dockerfile
     ports:
       - "8000:8000"
+    env_file:
+      - ./services/auth/.env
     networks:
       - what-to-eat-network
   menu-service:
     build:
       context: ./services/menu
       dockerfile: Dockerfile
-    ports:
-      - "8000:5000"
     env_file:
       - ./services/menu/.env
     volumes:
       - ./services/menu/src:/app/src
     networks:
       - what-to-eat-network
-    command: uvicorn src.main:app --host 0.0.0.0 --port 5000 --reload
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
 
   recipe-service:
     build:
       context: ./services/recipe
-    ports:
-      - "8002:8000"
+      dockerfile: Dockerfile
+    env_file:
+      - ./services/recipe/.env
+    volumes:
+      - ./services/recipe/src:/app/src
+    working_dir: /app/src
     networks:
       - what-to-eat-network
+    command: uvicorn recipe.main:app --host 0.0.0.0 --port 8000 --reload
 
   ets-service:
     build:
       context: ./services/eat-together
       dockerfile: Dockerfile
-    ports:
-      - "8004:5000"
     env_file:
       - ./services/eat-together/.env
     volumes:
       - ./services/eat-together/src:/app/src
     networks:
       - what-to-eat-network
-    command: uvicorn src.main:app --host 0.0.0.0 --port 5000 --reload
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
 
   profile-service:
     build:
       context: ./services/profile
-    ports:
-      - "8005:8000"
     networks:
       - what-to-eat-network
 
@@ -54,7 +56,7 @@ services:
     build:
       context: ./services/user-interface
     ports:
-      - "8006:8000"
+      - "5000:5000"
     networks:
       - what-to-eat-network
 
@@ -66,4 +68,4 @@ services:
 
 networks:
   what-to-eat-network:
-    driver: bridge
+    driver: "bridge"

@@ -115,7 +115,7 @@ def delete_restaurant(restaurant_id: str):
         image_path = f"restaurant/{restaurant[0]['image_url'].split('/')[-1][:-1]}"
         supabase.storage.from_("media").remove([image_path])
 
-    return 204, None
+    return None
 
 
 @app.get("/restaurant")
@@ -170,7 +170,6 @@ def list_matches_restaurant(
         main_ingredients = set(
             [ingredients["name"].lower() for ingredients in menu["main_ingredients"]]
         )
-        print(main_ingredients, filter_restrictions, user_dietary_preferences)
 
         # If the main ingredients contains any of the restrictions, skip
         if len((main_ingredients - filter_restrictions)) != len(main_ingredients):
@@ -227,21 +226,23 @@ def list_matches_restaurant(
             continue
 
         # Get the average rating for the menu
-        average_rating = (
-            supabase.table("Rating")
-            .select("rating_value")
-            .eq("menu", menu["id"])
-            .execute()
-        ).data
-        average_rating_value = (
-            sum(rating["rating_value"] for rating in average_rating)
-            / len(average_rating)
-            if average_rating
-            else 0
-        )
+        for menu in matches_restaurant_menus[restaurant["id"]]:
+            average_rating = (
+                supabase.table("Rating")
+                .select("rating_value")
+                .eq("menu", menu["id"])
+                .execute()
+            ).data
+            average_rating_value = (
+                sum(rating["rating_value"] for rating in average_rating)
+                / len(average_rating)
+                if average_rating
+                else 0
+            )
 
-        menu["average_rating"] = average_rating_value
-        del menu["restaurant"]
+            menu["average_rating"] = average_rating_value
+            menu["restaurant"] = None
+
         restaurant["location"] = restaurant_location
 
         response.append(
@@ -251,7 +252,7 @@ def list_matches_restaurant(
                     MenuResponse(**menu)
                     for menu in matches_restaurant_menus[restaurant["id"]]
                 ],
-                distance=distance,
+                distance=int(distance),
                 food_matches=len(matches_restaurant_menus[restaurant["id"]]),
             )
         )
@@ -496,7 +497,7 @@ def delete_menu(menu_id: str):
     # Delete ratings associated with the menu
     supabase.table("Rating").delete().eq("menu", menu_id).execute()
 
-    return 204, None
+    return None
 
 
 @app.post("/menu/{menu_id}/rate", status_code=201)

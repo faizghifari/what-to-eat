@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="landing-hero">
+    <div class="container">
+        <h1>🍽 What To Eat</h1>
+        <p class="lead mb-4">Smart menu, restaurant, and recipe recommendations for students</p>
+        <div class="row justify-content-center">
+            <div class="col-md-4">
+                <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg w-100 mb-3">Login</a>
+                <a href="{{ url_for('signup') }}" class="btn btn-primary btn-lg w-100 mb-3">Sign Up</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h2>Preferences & Restrictions</h2>
+            <p class="text-muted">Manage your dietary preferences and restrictions</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title mb-4">Dietary Preferences</h3>
+                    <form class="row g-2 mb-3" method="post" action="{{ url_for('add_preference') }}">
+                        <div class="col-5">
+                            <input type="text" class="form-control" name="name" placeholder="Preference name" required>
+                        </div>
+                        <div class="col-5">
+                            <input type="text" class="form-control" name="desc" placeholder="Description">
+                        </div>
+                        <div class="col-2">
+                            <button class="btn btn-outline-primary w-100" type="submit">Add</button>
+                        </div>
+                    </form>
+                    <div class="preference-section">
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            {% for pref in user.dietary_preferences %}
+                            <form method="post" action="{{ url_for('remove_preference', name=pref.name) }}" class="d-flex align-items-center gap-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="cuisine-{{ loop.index }}" value="{{ pref.name }}">
+                                    <label class="form-check-label" for="cuisine-{{ loop.index }}">
+                                        {{ pref.name }}
+                                        {% if pref.description %}<span class="text-muted small">- {{ pref.description }}</span>{% endif %}
+                                    </label>
+                                </div>
+                                <button class="btn btn-sm btn-outline-danger" type="submit">Remove</button>
+                            </form>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title mb-4">Dietary Restrictions</h3>
+                    <form class="row g-2 mb-3" method="post" action="{{ url_for('add_restriction') }}">
+                        <div class="col-5">
+                            <input type="text" class="form-control" name="name" placeholder="Restriction name" required>
+                        </div>
+                        <div class="col-5">
+                            <input type="text" class="form-control" name="desc" placeholder="Description">
+                        </div>
+                        <div class="col-2">
+                            <button class="btn btn-outline-primary w-100" type="submit">Add</button>
+                        </div>
+                    </form>
+                    <div class="preference-section">
+                        <div class="allergies-list">
+                            {% for restr in user.dietary_restrictions %}
+                            <form method="post" action="{{ url_for('remove_restriction', name=restr.name) }}" class="d-flex justify-content-between align-items-center mb-2">
+                                <span>{{ restr.name }}{% if restr.description %} <span class="text-muted small">- {{ restr.description }}</span>{% endif %}</span>
+                                <button class="btn btn-sm btn-outline-danger" type="submit">Remove</button>
+                            </form>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col">
+            <div class="d-flex justify-content-end gap-2">
+                <button class="btn btn-secondary">Reset All</button>
+                <button class="btn btn-primary">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

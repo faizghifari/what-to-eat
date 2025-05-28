@@ -13,7 +13,7 @@
 
     <div class="row mb-4">
         <div class="col">
-            <h3>Popular Restaurants</h3>
+            <h3>Recommended Restaurants</h3>
             <div class="row">
                 {% for restaurant_menu in recommended_restaurant_menus %}
                 <div class="col-md-3">
@@ -22,7 +22,9 @@
                         <div class="card-body">
                             <h5 class="card-title">{{ restaurant_menu.restaurant.name }}</h5>
                             <p class="card-text">{{ restaurant_menu.restaurant.address }}</p>
-                            <a href="{{ url_for('restaurant_matches', id=restaurant_menu.restaurant.id) }}" class="btn btn-primary">View Menu</a>
+                            <p class="text-muted">{{ restaurant_menu.food_matches }}</p>
+                            <p class="text-muted">{{ restaurant_menu.distance }} m</p>
+                            <a href="{{ url_for('restaurant_detail', id=restaurant_menu.restaurant.id) }}" class="btn btn-primary">View Menu</a>
                         </div>
                     </div>
                 </div>
@@ -35,17 +37,19 @@
         <div class="col">
             <h3>Recommended Menus</h3>
             <div class="row">
-                {% for i in range(4) %}
-                <div class="col-md-3">
-                    <div class="card food-card">
-                        <img src="https://via.placeholder.com/300x200" class="card-img-top" alt="Menu">
-                        <div class="card-body">
-                            <h5 class="card-title">Menu Item</h5>
-                            <p class="card-text">Short description of the menu item</p>
-                            <a href="{{ url_for('menu_detail', id=1) }}" class="btn btn-primary">View Details</a>
+                {% for restaurant in recommended_restaurant_menus %}
+                    {% for menu in restaurant.menus %}
+                    <div class="col-md-3">
+                        <div class="card food-card">
+                            <img src="{{ menu.image_url }}" class="card-img-top" alt="Menu">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ menu.name }}</h5>
+                                <p class="card-text">{{ menu.description }}</p>
+                                <a href="{{ url_for('menu_detail', id=menu.id) }}" class="btn btn-primary">View Details</a>
+                            </div>
                         </div>
                     </div>
-                </div>
+                    {% endfor %}
                 {% endfor %}
             </div>
         </div>

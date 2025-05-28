@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('food_home') }}">Food</a></li>
+                    <li class="breadcrumb-item active">{{ restaurant_menu_info.restaurant.name }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <img src="{{ restaurant_menu_info.restaurant.image_url }}" class="img-fluid rounded" alt="Restaurant">
+        </div>
+        <div class="col-md-8">
+            <h2>{{ restaurant_menu_info.restaurant.name }}</h2>
+            <p>{{ restaurant_menu_info.restaurant.address }}</p>
+            <div class="d-flex gap-2">
+                <a href="https://www.google.com/maps/search/?api=1&query={{ restaurant_menu_info.restaurant.latitude }},{{ restaurant_menu_info.restaurant.longitude }}" target="_blank" class="btn btn-outline-primary">Direction</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col">
+            <h3>Available Menu</h3>
+            <div class="row">
+                {% for menu in restaurant_menu_info.menus %}
+                <div class="col-md-4 mb-4">
+                    <div class="card food-card">
+                        <img src="{{ menu.image_url }}" class="card-img-top" alt="Menu Item">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ menu.name }}</h5>
+                            <p class="card-text">{{ menu.description }}</p>
+                            <p class="text-primary">${{ menu.price }}</p>
+                            <a href="{{ url_for('menu_detail', id=menu.id) }}" class="btn btn-primary">View Details</a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

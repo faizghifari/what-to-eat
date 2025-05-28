@@ -99,12 +99,12 @@ def food_home():
 
 @app.route("/food/restaurant/<int:id>")
 @login_required
-def restaurant_matches(id):
+def restaurant_detail(id):
     try:
-        restaurant = APIClient.get_restaurant(id)
-        menu_items = APIClient.get_restaurant_menu(id)
+        restaurant_menu_info = APIClient.get_restaurant_menu(id)
         return render_template(
-            "restaurant_matches.html", restaurant=restaurant, menu_items=menu_items
+            "restaurant_detail.html",
+            restaurant_menu_info=restaurant_menu_info,
         )
     except Exception:
         flash("Failed to load restaurant information")

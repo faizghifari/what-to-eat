@@ -15,7 +15,8 @@ For faster development build times, we recommend installing the "Cranelift" back
 ```
   > rustup component add rustc-codegen-cranelift
 ```
-Additionally, the [mold](https://github.com/rui314/mold) linker can improve build times on Linux. It can be activated by adding `"-C,"link-arg=-fuse-ld=mold",` to `rustflags` in `.cargo/config.toml`
+Additionally, the [mold](https://github.com/rui314/mold) linker can improve build times on Linux. It can be activated by adding `"-C,"link-arg=-fuse-ld=mold",` to `rustflags` in `.cargo/config.toml`.
+
 To build the service, simply run `cargo b` (`cargo build`) for development (unoptimised, debug messages), or `cargo br` (`cargo build --release`) for release (more optimised, not debug messages).
 
 ### Dependencies

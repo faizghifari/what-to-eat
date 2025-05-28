@@ -14,25 +14,30 @@
             <div class="card">
                 <div class="card-body">
                     <h3 class="card-title mb-4">Kitchen Tools</h3>
-                    
-                    <div class="mb-3">
-                        <div class="input-group">
-                            <input type="text" class="form-control" placeholder="Search tools...">
-                            <button class="btn btn-outline-primary">Add Tool</button>
+                    <form class="row g-2 mb-3" method="post" action="{{ url_for('add_tool') }}">
+                        <div class="col-5">
+                            <input type="text" class="form-control" name="name" placeholder="Tool name" required>
                         </div>
-                    </div>
+                        <div class="col-5">
+                            <input type="text" class="form-control" name="desc" placeholder="Description">
+                        </div>
+                        <div class="col-2">
+                            <button class="btn btn-outline-primary w-100" type="submit">Add</button>
+                        </div>
+                    </form>
 
                     <div class="tools-list">
-                        {% for tool in ['Oven', 'Microwave', 'Blender', 'Food Processor', 'Mixer'] %}
-                        <div class="preference-item d-flex justify-content-between align-items-center">
+                        {% for tool in user.available_tools %}
+                        <form method="post" action="{{ url_for('remove_tool', name=tool.name) }}" class="d-flex justify-content-between align-items-center mb-2">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="tool-{{ loop.index }}">
+                                <input class="form-check-input" type="checkbox" id="tool-{{ loop.index }}" value="{{ tool.name }}">
                                 <label class="form-check-label" for="tool-{{ loop.index }}">
-                                    {{ tool }}
+                                    {{ tool.name }}
+                                    {% if tool.desc %}<span class="text-muted small">- {{ tool.desc }}</span>{% endif %}
                                 </label>
                             </div>
-                            <button class="btn btn-sm btn-outline-danger">Remove</button>
-                        </div>
+                            <button class="btn btn-sm btn-outline-danger" type="submit">Remove</button>
+                        </form>
                         {% endfor %}
                     </div>
                 </div>
@@ -43,43 +48,30 @@
             <div class="card">
                 <div class="card-body">
                     <h3 class="card-title mb-4">Available Ingredients</h3>
-                    
-                    <div class="mb-3">
-                        <div class="input-group">
-                            <input type="text" class="form-control" placeholder="Search ingredients...">
-                            <button class="btn btn-outline-primary">Add Ingredient</button>
+                    <form class="row g-2 mb-3" method="post" action="{{ url_for('add_ingredient') }}">
+                        <div class="col-5">
+                            <input type="text" class="form-control" name="name" placeholder="Ingredient name" required>
                         </div>
-                    </div>
-
-                    <div class="ingredients-categories mb-4">
-                        <div class="btn-group" role="group">
-                            <button type="button" class="btn btn-outline-primary active">All</button>
-                            <button type="button" class="btn btn-outline-primary">Vegetables</button>
-                            <button type="button" class="btn btn-outline-primary">Fruits</button>
-                            <button type="button" class="btn btn-outline-primary">Meat</button>
-                            <button type="button" class="btn btn-outline-primary">Dairy</button>
-                            <button type="button" class="btn btn-outline-primary">Pantry</button>
+                        <div class="col-5">
+                            <input type="text" class="form-control" name="desc" placeholder="Description">
                         </div>
-                    </div>
+                        <div class="col-2">
+                            <button class="btn btn-outline-primary w-100" type="submit">Add</button>
+                        </div>
+                    </form>
 
                     <div class="ingredients-list">
-                        {% for ingredient in ['Rice', 'Eggs', 'Milk', 'Chicken', 'Tomatoes'] %}
-                        <div class="preference-item d-flex justify-content-between align-items-center">
+                        {% for ingredient in user.available_ingredients %}
+                        <form method="post" action="{{ url_for('remove_ingredient', name=ingredient.name) }}" class="d-flex justify-content-between align-items-center mb-2">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="ingredient-{{ loop.index }}">
+                                <input class="form-check-input" type="checkbox" id="ingredient-{{ loop.index }}" value="{{ ingredient.name }}">
                                 <label class="form-check-label" for="ingredient-{{ loop.index }}">
-                                    {{ ingredient }}
+                                    {{ ingredient.name }}
+                                    {% if ingredient.desc %}<span class="text-muted small">- {{ ingredient.desc }}</span>{% endif %}
                                 </label>
                             </div>
-                            <div>
-                                <select class="form-select form-select-sm me-2" style="width: 100px; display: inline-block;">
-                                    <option>Low</option>
-                                    <option>Medium</option>
-                                    <option>High</option>
-                                </select>
-                                <button class="btn btn-sm btn-outline-danger">Remove</button>
-                            </div>
-                        </div>
+                            <button class="btn btn-sm btn-outline-danger" type="submit">Remove</button>
+                        </form>
                         {% endfor %}
                     </div>
                 </div>

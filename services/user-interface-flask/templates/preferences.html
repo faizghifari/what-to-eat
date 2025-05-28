@@ -14,46 +14,30 @@
             <div class="card">
                 <div class="card-body">
                     <h3 class="card-title mb-4">Dietary Preferences</h3>
-                    
+                    <form class="row g-2 mb-3" method="post" action="{{ url_for('add_preference') }}">
+                        <div class="col-5">
+                            <input type="text" class="form-control" name="name" placeholder="Preference name" required>
+                        </div>
+                        <div class="col-5">
+                            <input type="text" class="form-control" name="desc" placeholder="Description">
+                        </div>
+                        <div class="col-2">
+                            <button class="btn btn-outline-primary w-100" type="submit">Add</button>
+                        </div>
+                    </form>
                     <div class="preference-section">
-                        <h5>Cuisine Types</h5>
                         <div class="d-flex flex-wrap gap-2 mb-3">
-                            {% for cuisine in ['Korean', 'Japanese', 'Chinese', 'Italian', 'Mexican', 'Indian'] %}
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="cuisine-{{ loop.index }}">
-                                <label class="form-check-label" for="cuisine-{{ loop.index }}">
-                                    {{ cuisine }}
-                                </label>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-
-                    <div class="preference-section">
-                        <h5>Taste Preferences</h5>
-                        <div class="mb-3">
-                            <label class="form-label">Spiciness Level</label>
-                            <input type="range" class="form-range" min="0" max="4" step="1">
-                            <div class="d-flex justify-content-between">
-                                <small>Not Spicy</small>
-                                <small>Mild</small>
-                                <small>Medium</small>
-                                <small>Spicy</small>
-                                <small>Very Spicy</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="preference-section">
-                        <h5>Meal Types</h5>
-                        <div class="d-flex flex-wrap gap-2">
-                            {% for meal in ['Breakfast', 'Lunch', 'Dinner', 'Snacks'] %}
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="meal-{{ loop.index }}">
-                                <label class="form-check-label" for="meal-{{ loop.index }}">
-                                    {{ meal }}
-                                </label>
-                            </div>
+                            {% for pref in user.dietary_preferences %}
+                            <form method="post" action="{{ url_for('remove_preference', name=pref.name) }}" class="d-flex align-items-center gap-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="cuisine-{{ loop.index }}" value="{{ pref.name }}">
+                                    <label class="form-check-label" for="cuisine-{{ loop.index }}">
+                                        {{ pref.name }}
+                                        {% if pref.desc %}<span class="text-muted small">- {{ pref.desc }}</span>{% endif %}
+                                    </label>
+                                </div>
+                                <button class="btn btn-sm btn-outline-danger" type="submit">Remove</button>
+                            </form>
                             {% endfor %}
                         </div>
                     </div>
@@ -65,53 +49,24 @@
             <div class="card">
                 <div class="card-body">
                     <h3 class="card-title mb-4">Dietary Restrictions</h3>
-                    
-                    <div class="preference-section">
-                        <h5>Allergies</h5>
-                        <div class="mb-3">
-                            <div class="input-group">
-                                <input type="text" class="form-control" placeholder="Add allergy...">
-                                <button class="btn btn-outline-primary">Add</button>
-                            </div>
+                    <form class="row g-2 mb-3" method="post" action="{{ url_for('add_restriction') }}">
+                        <div class="col-5">
+                            <input type="text" class="form-control" name="name" placeholder="Restriction name" required>
                         </div>
+                        <div class="col-5">
+                            <input type="text" class="form-control" name="desc" placeholder="Description">
+                        </div>
+                        <div class="col-2">
+                            <button class="btn btn-outline-primary w-100" type="submit">Add</button>
+                        </div>
+                    </form>
+                    <div class="preference-section">
                         <div class="allergies-list">
-                            {% for allergy in ['Peanuts', 'Shellfish', 'Dairy'] %}
-                            <div class="preference-item d-flex justify-content-between align-items-center">
-                                <span>{{ allergy }}</span>
-                                <button class="btn btn-sm btn-outline-danger">Remove</button>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-
-                    <div class="preference-section">
-                        <h5>Dietary Requirements</h5>
-                        <div class="d-flex flex-wrap gap-2">
-                            {% for diet in ['Vegetarian', 'Vegan', 'Gluten-Free', 'Halal', 'Kosher'] %}
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="diet-{{ loop.index }}">
-                                <label class="form-check-label" for="diet-{{ loop.index }}">
-                                    {{ diet }}
-                                </label>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-
-                    <div class="preference-section">
-                        <h5>Excluded Ingredients</h5>
-                        <div class="mb-3">
-                            <div class="input-group">
-                                <input type="text" class="form-control" placeholder="Add ingredient to exclude...">
-                                <button class="btn btn-outline-primary">Add</button>
-                            </div>
-                        </div>
-                        <div class="excluded-list">
-                            {% for item in ['Cilantro', 'Bell Peppers', 'Mushrooms'] %}
-                            <div class="preference-item d-flex justify-content-between align-items-center">
-                                <span>{{ item }}</span>
-                                <button class="btn btn-sm btn-outline-danger">Remove</button>
-                            </div>
+                            {% for restr in user.dietary_restrictions %}
+                            <form method="post" action="{{ url_for('remove_restriction', name=restr.name) }}" class="d-flex justify-content-between align-items-center mb-2">
+                                <span>{{ restr.name }}{% if restr.desc %} <span class="text-muted small">- {{ restr.desc }}</span>{% endif %}</span>
+                                <button class="btn btn-sm btn-outline-danger" type="submit">Remove</button>
+                            </form>
                             {% endfor %}
                         </div>
                     </div>

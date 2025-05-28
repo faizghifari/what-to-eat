@@ -34,8 +34,8 @@ async fn receiver(
     use tokio::net::TcpListener;
 
     let listener: Result<TcpListener, _> = TcpListener::bind((
-        address.unwrap_or(std::net::IpAddr::V6(std::net::Ipv6Addr::LOCALHOST)),
-        port.unwrap_or(5000),
+        address.unwrap_or(std::net::IpAddr::V4(std::net::Ipv4Addr::UNSPECIFIED)), // listen on 0.0.0.0
+        port.unwrap_or(8000), // changed from 5000 to 8000
     ))
     .await;
 

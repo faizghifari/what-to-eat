@@ -259,10 +259,20 @@ async def edit_location(request: Request) -> Response:
         body_raw: bytes = await request.body()
         json_body: dict[str, str|int] = from_json(body_raw.decode("utf-8"))
         #logger.debug(f"Body: {json_body}")
-        location_idx: str = str(json_body[Field.Location.value])
-        logger.debug(f"Location idx: {type(location_idx)}")
-        return await edit_field(uuid, Field.Location, location_idx)
-        
+        location: int| dict[str,int|float] = json_body[Field.Location.value]
+
+        if type(location) is int:
+            logger.debug(f"Location idx: {location}")
+            return await edit_field(uuid, Field.Location, str(location))
+        else:
+            try:
+                _success = client.table("Location").update(location).eq("id",location["id"]).execute()                
+                return await edit_field(uuid, Field.Location, str(location["id"]))
+                
+            except Exception as err:
+                logger.error(f"failed to update location. Reason: {err}")
+                return Response(content="Failed to update value", status_code=500)
+
     except Exception as err:
         logger.error(f"failed to update location. Reason: {err}")
         return Response(content="Failed to update value", status_code=500)

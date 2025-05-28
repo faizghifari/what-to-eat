@@ -4,10 +4,15 @@ This service provides recipe recommendations and recipe CRUD operations. It is i
 
 ## Endpoints
 
-- **CRUD for `Recipe` table**: Create, read, update, and delete recipes with fields: name, description, ingredients, tools, instructions, estimated_price, estimated_time, image_url.
+- **CRUD for `Recipe` table**: Create, read, update, and delete recipes. All recipe endpoints return a new field `average_rating` (the average of all ratings for that recipe) in their response.
 - **CRUD for `Rating` table**: Users can rate recipes (create, read, update, delete their rating) with fields: rating_value, comment_text, recipe_id, and user_id (from X-User-uuid header).
-- **POST `/recipe/matches`**: Recommend recipes based on user profile (dietary preferences, restrictions, available tools/ingredients). Requires `X-User-uuid` header.
-- **POST `/recipe/matches_web`**: Recommend recipes using Google GenAI with Google Search if no local match is found. Requires `X-User-uuid` header.
+- **GET `/recipe/`**: List all recipes, each with `average_rating`.
+- **GET `/recipe/{recipe_id}`**: Get a recipe by ID, including `average_rating`.
+- **POST `/recipe/`**: Create a recipe, response includes `average_rating` (null if no ratings yet).
+- **PUT `/recipe/{recipe_id}`**: Update a recipe, response includes `average_rating`.
+- **DELETE `/recipe/{recipe_id}`**: Delete a recipe.
+- **POST `/recipe/matches`**: Recommend recipes based on user profile (dietary preferences, restrictions, available tools/ingredients). Requires `X-User-uuid` header. Each result includes `average_rating`.
+- **POST `/recipe/matches_web`**: Recommend recipes using Google GenAI with Google Search if no local match is found. Requires `X-User-uuid` header. Each result includes `average_rating`.
 
 ## Getting Started
 
@@ -35,6 +40,7 @@ This service provides recipe recommendations and recipe CRUD operations. It is i
 
 - All endpoints are prefixed with `/recipe`.
 - All endpoints expect and return JSON.
+- All recipe endpoints return an `average_rating` field in the response.
 - See `API_CONTRACT.md` for detailed API contract, error handling, and example payloads.
 - See the "Recipe Rating Endpoints" section for how to rate recipes (add, update, delete, and list ratings).
 

@@ -1,9 +1,11 @@
 from pydantic import BaseModel
 from typing import Optional, List, Dict
 
+
 class NameDescPair(BaseModel):
     name: str
     description: str
+
 
 class Recipe(BaseModel):
     id: Optional[int] = None
@@ -16,6 +18,7 @@ class Recipe(BaseModel):
     estimated_time: str
     image_url: str
 
+
 class RecipeUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
@@ -26,6 +29,7 @@ class RecipeUpdate(BaseModel):
     estimated_time: Optional[str] = None
     image_url: Optional[str] = None
 
+
 class Rating(BaseModel):
     id: int | None = None
     recipe: int
@@ -33,9 +37,11 @@ class Rating(BaseModel):
     rating_value: int
     comment_text: str
 
+
 class RatingCreate(BaseModel):
     rating_value: int
     comment_text: str = ""
+
 
 class RatingUpdate(BaseModel):
     rating_value: int | None = None

@@ -1,8 +1,4 @@
-import sys
-import os
-
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse
 
 from recipe.crud_endpoints import router as crud_router
 from recipe.recommendation_endpoints import router as rec_router

@@ -9,3 +9,5 @@
 __pycache__/
 *.pyc
 
+services/profile/profile.log
+services/profile/src/profile.log

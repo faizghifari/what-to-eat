@@ -11,6 +11,7 @@ from recipe.utils import (
     extract_names,
     filter_recipes,
     GOOGLE_GENAI_MODEL,
+    get_average_rating,
 )
 from recipe.models import Recipe
 
@@ -27,6 +28,9 @@ def recommend_recipes(x_user_uuid: Annotated[str, Header(alias="X-User-uuid")]):
     filtered = filter_recipes(
         res.data, restrictions, available_tools, available_ingredients
     )
+    # Add average_rating for each recipe
+    for r in filtered:
+        r["average_rating"] = get_average_rating(r["id"])
     if not filtered:
         return JSONResponse(
             status_code=200,
@@ -86,7 +90,9 @@ def recommend_recipes_search(x_user_uuid: Annotated[str, Header(alias="X-User-uu
     except Exception:
         from json import JSONDecodeError
 
-        raise JSONDecodeError("Failed to parse JSON", text, 0)
+        raise JSONDecodeError(
+            "Failed to parse JSON", response.candidates[0].content.parts[0].text, 0
+        )
 
     if recipes_to_store:
         try:
@@ -97,6 +103,9 @@ def recommend_recipes_search(x_user_uuid: Annotated[str, Header(alias="X-User-uu
                 raise HTTPException(
                     status_code=400, detail="Failed to create gathered recipes"
                 )
+            # Add average_rating to each recipe
+            for r in stored.data:
+                r["average_rating"] = get_average_rating(r["id"])
             return {
                 "results": stored.data,
             }

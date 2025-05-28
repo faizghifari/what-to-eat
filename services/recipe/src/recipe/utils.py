@@ -49,3 +49,11 @@ def filter_recipes(recipes, restrictions, available_tools, available_ingredients
             continue
         filtered.append(r)
     return filtered
+
+
+def get_average_rating(recipe_id: int):
+    res = supabase.table("Rating").select("rating_value").eq("recipe", recipe_id).execute()
+    ratings = res.data or []
+    if not ratings:
+        return None
+    return sum(r["rating_value"] for r in ratings) / len(ratings)

@@ -46,3 +46,15 @@ class RatingCreate(BaseModel):
 class RatingUpdate(BaseModel):
     rating_value: int | None = None
     comment_text: str | None = None
+
+
+class RecipeResponse(Recipe):
+    average_rating: float | None = None
+
+
+class MessageResponse(BaseModel):
+    message: str
+
+
+class DeleteResponse(BaseModel):
+    message: str

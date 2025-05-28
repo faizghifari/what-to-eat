@@ -1,21 +1,23 @@
 from fastapi import APIRouter, HTTPException, Header
 
-from recipe.models import Recipe, RecipeUpdate, Rating, RatingCreate, RatingUpdate
-from recipe.utils import supabase
+from recipe.models import Recipe, RecipeUpdate, Rating, RatingCreate, RatingUpdate, RecipeResponse, DeleteResponse
+from recipe.utils import supabase, get_average_rating
 
 from typing import List
 
 router = APIRouter()
 
 
-@router.post("/recipe/", response_model=Recipe)
+@router.post("/recipe/", response_model=RecipeResponse)
 def create_recipe(recipe: Recipe):
     data = recipe.model_dump(exclude_unset=True)
     try:
         res = supabase.table("Recipe").insert(data).execute()
         if not res.data or (isinstance(res.data, list) and len(res.data) == 0):
             raise HTTPException(status_code=400, detail="Failed to create recipe")
-        return res.data[0]
+        recipe_obj = res.data[0]
+        avg_rating = get_average_rating(recipe_obj["id"])
+        return {**recipe_obj, "average_rating": avg_rating}
     except Exception as e:
         detail = getattr(e, "message", str(e))
         if hasattr(e, "args") and e.args and isinstance(e.args[0], dict):
@@ -24,13 +26,17 @@ def create_recipe(recipe: Recipe):
         raise HTTPException(status_code=400, detail=f"Supabase error: {detail}")
 
 
-@router.get("/recipe/", response_model=List[Recipe])
+@router.get("/recipe/", response_model=List[RecipeResponse])
 def list_recipes():
     try:
         res = supabase.table("Recipe").select("*").execute()
         if res.data is None:
             raise HTTPException(status_code=400, detail="Failed to list recipes")
-        return res.data
+        recipes = res.data
+        # Add average_rating for each recipe
+        for r in recipes:
+            r["average_rating"] = get_average_rating(r["id"])
+        return recipes
     except Exception as e:
         detail = getattr(e, "message", str(e))
         if hasattr(e, "args") and e.args and isinstance(e.args[0], dict):
@@ -39,7 +45,7 @@ def list_recipes():
         raise HTTPException(status_code=400, detail=f"Supabase error: {detail}")
 
 
-@router.get("/recipe/{recipe_id}", response_model=Recipe)
+@router.get("/recipe/{recipe_id}", response_model=RecipeResponse)
 def get_recipe(recipe_id: int):
     try:
         res = (
@@ -47,7 +53,9 @@ def get_recipe(recipe_id: int):
         )
         if not res.data:
             raise HTTPException(status_code=404, detail="Recipe not found")
-        return res.data
+        recipe_obj = res.data
+        avg_rating = get_average_rating(recipe_id)
+        return {**recipe_obj, "average_rating": avg_rating}
     except Exception as e:
         err_msg = str(getattr(e, "args", [""])[0])
         if (
@@ -63,14 +71,16 @@ def get_recipe(recipe_id: int):
         raise HTTPException(status_code=400, detail=f"Supabase error: {detail}")
 
 
-@router.put("/recipe/{recipe_id}", response_model=Recipe)
+@router.put("/recipe/{recipe_id}", response_model=RecipeResponse)
 def update_recipe(recipe_id: int, recipe: RecipeUpdate):
     data = recipe.model_dump(exclude_unset=True)
     try:
         res = supabase.table("Recipe").update(data).eq("id", recipe_id).execute()
         if not res.data or (isinstance(res.data, list) and len(res.data) == 0):
             raise HTTPException(status_code=400, detail="Failed to update recipe")
-        return res.data[0]
+        recipe_obj = res.data[0]
+        avg_rating = get_average_rating(recipe_id)
+        return {**recipe_obj, "average_rating": avg_rating}
     except Exception as e:
         detail = getattr(e, "message", str(e))
         if hasattr(e, "args") and e.args and isinstance(e.args[0], dict):
@@ -79,13 +89,13 @@ def update_recipe(recipe_id: int, recipe: RecipeUpdate):
         raise HTTPException(status_code=400, detail=f"Supabase error: {detail}")
 
 
-@router.delete("/recipe/{recipe_id}")
+@router.delete("/recipe/{recipe_id}", response_model=DeleteResponse)
 def delete_recipe(recipe_id: int):
     try:
         res = supabase.table("Recipe").delete().eq("id", recipe_id).execute()
         if not res.data:
             raise HTTPException(status_code=404, detail="Recipe not found")
-        return {"message": "Recipe deleted"}
+        return DeleteResponse(message="Recipe deleted")
     except HTTPException:
         raise
     except Exception as e:

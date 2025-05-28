@@ -83,6 +83,14 @@ def signup():
     return render_template("signup.html")
 
 
+@app.route("/signout")
+def signout():
+    # Clear the session
+    session.clear()
+    flash("You have been signed out")
+    return redirect(url_for("index"))
+
+
 @app.route("/food")
 @login_required
 def food_home():
@@ -207,7 +215,11 @@ def rate_menu(id):
         data = request.get_json()
         if not data or "rating" not in data:
             return jsonify({"error": "Rating is required"}), 400
-        APIClient.rate_menu(id, data["rating"])
+
+        rating = data["rating"]
+        review = data.get("review", "")  # Optional review text
+
+        APIClient.rate_menu(id, rating, review)
         return jsonify({"success": True})
     except APIError:
         return jsonify({"error": "Failed to submit rating"}), 400
@@ -276,14 +288,6 @@ def search_user():
         return jsonify({"users": users})
     except APIError:
         return jsonify({"error": "Failed to search user"}), 400
-
-
-@app.route("/signout")
-def signout():
-    # Clear the session
-    session.clear()
-    flash("You have been signed out")
-    return redirect(url_for("index"))
 
 
 if __name__ == "__main__":

@@ -153,12 +153,12 @@ class APIClient:
             return None
 
     @classmethod
-    def rate_menu(cls, menu_id, rating):
+    def rate_menu(cls, menu_id, rating, review=""):
         try:
             response = requests.post(
                 f"{MENU_SERVICE_URL}/menu/{menu_id}/rate",
                 headers=cls.get_headers(),
-                json={"rating": rating},
+                json={"rating_value": rating, "comment_text": review},
                 params=cls.get_access_token_params(),
             )
             return cls.handle_response(response)

@@ -32,8 +32,6 @@ rustflags = [
 linker = "clang"
 rustflags = [
     "-C",
-    "link-arg=-fuse-ld=mold",
-    "-C",
     "target-cpu=native",
     "-Z",
     "tune-cpu=native",

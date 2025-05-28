@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Initialize roulette functionality
-    initializeRoulette();
+    // initializeRoulette();
 });
 
 async function handleCreateGroup(event) {
@@ -146,7 +146,6 @@ function initializeRoulette() {
 
             // Simulate spinning animation while fetching result
             const groupId = document.querySelector('[data-group-id]').dataset.groupId;
-            const matches = await api.get(`/eat-together/${groupId}/food-matches`);
 
             // Randomly select one restaurant
             const randomMatch = matches[Math.floor(Math.random() * matches.length)];

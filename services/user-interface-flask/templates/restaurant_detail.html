@@ -37,7 +37,7 @@
                         <div class="card-body">
                             <h5 class="card-title">{{ menu.name }}</h5>
                             <p class="card-text">{{ menu.description }}</p>
-                            <p class="text-primary">${{ menu.price }}</p>
+                            <p class="text-primary">₩{{ menu.price }}</p>
                             <a href="{{ url_for('menu_detail', id=menu.id) }}" class="btn btn-primary">View Details</a>
                         </div>
                     </div>

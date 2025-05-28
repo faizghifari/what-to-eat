@@ -22,8 +22,8 @@ class Restaurant(BaseModel):
     id: int
     name: str
     address: str
-    telephone: str
-    image_url: Optional[str]
+    telephone: Optional[str] = None
+    image_url: Optional[str] = None
     location: Location
     created_at: datetime
 
@@ -95,7 +95,7 @@ class MenuResponse(Menu):
 class RestaurantMenuResponse(BaseModel):
     restaurant: Restaurant
     menus: List[MenuResponse]
-    distance: float
+    distance: int
     food_matches: Optional[int] = None
 
 

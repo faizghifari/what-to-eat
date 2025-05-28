@@ -110,7 +110,7 @@ def food_home():
             "food_home.html",
             recommended_restaurant_menus=recommended_restaurant_menus,
         )
-    except Exception:  # Use Exception instead of bare except
+    except Exception:
         flash("Failed to load recommendations")
         return render_template("food_home.html", recommended_restaurant_menus=[])
 
@@ -135,7 +135,8 @@ def menu_detail(id):
     try:
         menu = APIClient.get_menu_details(id)
         return render_template("menu_detail.html", menu=menu)
-    except Exception:
+    except Exception as e:
+        print(str(e))
         flash("Failed to load menu information")
         return redirect(url_for("food_home"))
 
@@ -178,9 +179,9 @@ def tools_ingredients():
     return render_template("tools_ingredients.html")
 
 
-@app.route("/preferences")
+@app.route("/preferences-restrictions")
 @login_required
-def preferences():
+def preferences_restrictions():
     return render_template("preferences.html")
 
 
@@ -188,21 +189,28 @@ def preferences():
 @login_required
 def eat_together():
     try:
-        groups = APIClient.get_my_groups()
-        return render_template("eat_together.html", groups=groups)
+        group = APIClient.get_my_group()
+        return render_template("eat_together.html", group=group)
     except Exception:
-        flash("Failed to load groups")
-        return render_template("eat_together.html", groups=[])
+        flash("Failed to load group")
+        return redirect(url_for("food_home"))
 
 
-@app.route("/eat-together/group/<int:id>/settings")
+@app.route("/eat-together/group/settings")
 @login_required
-def group_settings(id):
+def group_settings():
     try:
-        group = APIClient.get_group_by_code(id)
-        return render_template("group_settings.html", group=group)
-    except Exception:
-        flash("Failed to load group settings")
+        group = APIClient.get_my_group()
+        role = ""
+
+        # Find the role of the current user in the group
+        for member in group["members"]:
+            if member["user"]["uuid"] == session.get("user_uuid"):
+                role = member["role"]
+                break
+        return render_template("group_settings.html", group=group, role=role)
+    except Exception as e:
+        flash(f"Failed to load group settings {str(e.with_traceback(None))}")
         return redirect(url_for("eat_together"))
 
 
@@ -298,6 +306,98 @@ def search_user():
         return jsonify({"users": users})
     except APIError:
         return jsonify({"error": "Failed to search user"}), 400
+
+
+@app.route("/api/eat-together", methods=["POST"])
+@login_required
+def create_eat_together_group():
+    try:
+        data = request.json
+        response = APIClient.create_group(
+            name=data.get("name"),
+            guest_preferences=data.get("guest_preferences", []),
+            guest_restrictions=data.get("guest_restrictions", []),
+        )
+        return jsonify(response), 201
+    except APIError as e:
+        return jsonify({"error": str(e)}), e.status_code
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/eat-together/<int:group_id>", methods=["DELETE"])
+@login_required
+def delete_group(group_id):
+    try:
+        APIClient.delete_group(group_id)
+        return jsonify({"status": "success"})
+    except APIError as e:
+        return jsonify({"error": str(e)}), e.status_code
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/eat-together/member/join", methods=["POST"])
+@login_required
+def join_group():
+    try:
+        data = request.json
+        response = APIClient.join_group(group_code=data.get("group_code"))
+        return jsonify(response)
+    except APIError as e:
+        return jsonify({"error": str(e)}), e.status_code
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/eat-together/member/leave", methods=["DELETE"])
+@login_required
+def leave_group():
+    try:
+        APIClient.leave_group()
+        return jsonify({"status": "success"})
+    except APIError as e:
+        return jsonify({"error": str(e)}), e.status_code
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/eat-together/<int:group_id>/update-guest", methods=["PUT"])
+@login_required
+def update_guest_preferences(group_id):
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+
+        guest_preferences = data.get("guest_preferences", [[]])
+        guest_restrictions = data.get("guest_restrictions", [[]])
+
+        response = APIClient.update_guest(
+            group_id=group_id,
+            preferences=guest_preferences,
+            restrictions=guest_restrictions,
+        )
+        return jsonify(response if response else {"status": "success"})
+    except APIError as e:
+        return jsonify({"error": str(e)}), e.status_code
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route(
+    "/api/eat-together/<int:group_id>/remove-member/<string:member_id>",
+    methods=["DELETE"],
+)
+@login_required
+def remove_group_member(group_id, member_id):
+    try:
+        APIClient.remove_member_from_group(group_id, member_id)
+        return jsonify({"status": "success"})
+    except APIError as e:
+        return jsonify({"error": str(e)}), e.status_code
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":

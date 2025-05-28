@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 from datetime import datetime
 
 
@@ -38,8 +38,14 @@ class Restaurant(BaseModel):
     id: int
     name: str
     address: str
-    telephone: str
-    image_url: str = ""
+    telephone: Optional[str] = None
+    image_url: Optional[str] = None
+
+
+class Location(BaseModel):
+    latitude: float
+    longitude: float
+    inside_kaist: bool = False
 
 
 """
@@ -57,6 +63,10 @@ class AddMemberRequest(BaseModel):
     member_uuid: str
 
 
+class JoinEatTogetherGroupRequest(BaseModel):
+    group_code: str
+
+
 class UpdateGuestPreferenceRestrictionsRequest(BaseModel):
     guest_preferences: List[List[NameDescPair]] = []
     guest_restrictions: List[List[NameDescPair]] = []
@@ -70,3 +80,21 @@ Responses
 class EatTogetherMemberResponse(BaseModel):
     group: EatTogetherGroup
     members: List[GroupMember]
+
+
+class MenuResponse(BaseModel):
+    id: int
+    name: str
+    description: str
+    main_ingredients: List[NameDescPair]
+    price: float
+    image_url: Optional[str]
+    restaurant: Optional[Restaurant] = None
+    created_at: datetime
+
+
+class RestaurantMenuResponse(BaseModel):
+    restaurant: Restaurant
+    menus: List[MenuResponse]
+    food_matches: Optional[int] = None
+    average_rating: Optional[float] = None

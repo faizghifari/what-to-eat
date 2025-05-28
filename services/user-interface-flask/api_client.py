@@ -1,5 +1,5 @@
-from functools import wraps
 import requests
+from functools import wraps
 from flask import session, redirect, url_for, flash
 
 # Service URLs
@@ -20,7 +20,6 @@ def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if "user_uuid" not in session:
-            # session["user_uuid"] = "dummy-user-123"  # Dummy UUID for testing
             flash("You must be logged in to access this page")
             return redirect(url_for("login"))
         return f(*args, **kwargs)
@@ -35,12 +34,7 @@ class APIClient:
             "Authorization": f'Bearer {session.get("access_token", "")}',
             "Content-Type": "application/json",
             "X-User-Uuid": session.get("user_uuid"),
-        }
-
-    @staticmethod
-    def get_access_token_params():
-        return {
-            "access_token": session.get("access_token", ""),
+            "access-token": session.get("access_token", ""),
         }
 
     @staticmethod
@@ -118,7 +112,6 @@ class APIClient:
             response = requests.get(
                 f"{MENU_SERVICE_URL}/menu",
                 headers=cls.get_headers(),
-                params=cls.get_access_token_params(),
             )
             return cls.handle_response(response)
         except requests.RequestException:
@@ -131,7 +124,6 @@ class APIClient:
             response = requests.get(
                 f"{MENU_SERVICE_URL}/restaurant/{restaurant_id}/menu",
                 headers=cls.get_headers(),
-                params=cls.get_access_token_params(),
             )
             return cls.handle_response(response)
         except requests.RequestException:
@@ -144,7 +136,6 @@ class APIClient:
             response = requests.get(
                 f"{MENU_SERVICE_URL}/menu/{menu_id}",
                 headers=cls.get_headers(),
-                params=cls.get_access_token_params(),
             )
             return cls.handle_response(response)
         except requests.RequestException:
@@ -158,7 +149,6 @@ class APIClient:
                 f"{MENU_SERVICE_URL}/menu/{menu_id}/rate",
                 headers=cls.get_headers(),
                 json={"rating_value": rating, "comment_text": review},
-                params=cls.get_access_token_params(),
             )
             return cls.handle_response(response)
         except requests.RequestException:
@@ -171,7 +161,6 @@ class APIClient:
             response = requests.get(
                 f"{MENU_SERVICE_URL}/restaurant",
                 headers=cls.get_headers(),
-                params=cls.get_access_token_params(),
             )
             return cls.handle_response(response)
         except requests.RequestException:
@@ -184,7 +173,6 @@ class APIClient:
             response = requests.get(
                 f"{MENU_SERVICE_URL}/restaurant/matches",
                 headers=cls.get_headers(),
-                params=cls.get_access_token_params(),
             )
             return cls.handle_response(response)
         except requests.RequestException:
@@ -197,7 +185,6 @@ class APIClient:
             response = requests.get(
                 f"{MENU_SERVICE_URL}/restaurant/{restaurant_id}",
                 headers=cls.get_headers(),
-                params=cls.get_access_token_params(),
             )
             return cls.handle_response(response)
         except requests.RequestException:
@@ -211,7 +198,6 @@ class APIClient:
             response = requests.get(
                 f"{RECIPE_SERVICE_URL}/recipe/{recipe_id}",
                 headers=cls.get_headers(),
-                params=cls.get_access_token_params(),
             )
             return cls.handle_response(response)
         except requests.RequestException:
@@ -224,7 +210,6 @@ class APIClient:
             response = requests.get(
                 f"{RECIPE_SERVICE_URL}/recipe/matches",
                 headers=cls.get_headers(),
-                params=cls.get_access_token_params(),
             )
             return cls.handle_response(response)
         except requests.RequestException:
@@ -237,7 +222,6 @@ class APIClient:
             response = requests.get(
                 f"{RECIPE_SERVICE_URL}/recipe/matches_web",
                 headers=cls.get_headers(),
-                params=cls.get_access_token_params(),
             )
             return cls.handle_response(response)
         except requests.RequestException:
@@ -246,26 +230,40 @@ class APIClient:
 
     # Eat Together Service
     @classmethod
-    def create_group(cls, name, description=None):
+    def create_group(cls, name, guest_preferences=[], guest_restrictions=[]):
         try:
             response = requests.post(
                 f"{EAT_TOGETHER_SERVICE_URL}",
                 headers=cls.get_headers(),
-                params=cls.get_access_token_params(),
-                json={"name": name, "description": description},
+                json={
+                    "group_name": name,
+                    "guest_preferences": guest_preferences,
+                    "guest_restrictions": guest_restrictions,
+                },
             )
             return cls.handle_response(response)
-        except requests.RequestException:
-            flash("Failed to create group")
+        except requests.RequestException as e:
+            flash(f"Failed to create group - {str(e)}")
             raise APIError("Group creation failed")
 
     @classmethod
-    def get_group_by_code(cls, group_code):
+    def delete_group(cls, group_id):
+        try:
+            response = requests.delete(
+                f"{EAT_TOGETHER_SERVICE_URL}/{group_id}",
+                headers=cls.get_headers(),
+            )
+            return cls.handle_response(response)
+        except requests.RequestException:
+            flash("Failed to delete group")
+            raise APIError("Group deletion failed")
+
+    @classmethod
+    def get_group_by_id(cls, group_id):
         try:
             response = requests.get(
-                f"{EAT_TOGETHER_SERVICE_URL}/group/{group_code}",
+                f"{EAT_TOGETHER_SERVICE_URL}/{group_id}",
                 headers=cls.get_headers(),
-                params=cls.get_access_token_params(),
             )
             return cls.handle_response(response)
         except requests.RequestException:
@@ -273,17 +271,16 @@ class APIClient:
             return None
 
     @classmethod
-    def get_my_groups(cls):
+    def get_my_group(cls):
         try:
             response = requests.get(
                 f"{EAT_TOGETHER_SERVICE_URL}/me",
                 headers=cls.get_headers(),
-                params=cls.get_access_token_params(),
             )
             return cls.handle_response(response)
         except requests.RequestException:
-            flash("Failed to fetch your groups")
-            return []
+            flash("Failed to fetch your group")
+            return None
 
     @classmethod
     def add_member_to_group(cls, group_id, member_id):
@@ -291,7 +288,7 @@ class APIClient:
             response = requests.get(
                 f"{EAT_TOGETHER_SERVICE_URL}/{group_id}/add-member",
                 headers=cls.get_headers(),
-                params={"member_id": member_id, **cls.get_access_token_params()},
+                params={"member_id": member_id},
             )
             return cls.handle_response(response)
         except requests.RequestException:
@@ -304,7 +301,6 @@ class APIClient:
             response = requests.delete(
                 f"{EAT_TOGETHER_SERVICE_URL}/{group_id}/remove-member/{member_id}",
                 headers=cls.get_headers(),
-                params=cls.get_access_token_params(),
             )
             return cls.handle_response(response)
         except requests.RequestException:
@@ -312,13 +308,40 @@ class APIClient:
             raise APIError("Member removal failed")
 
     @classmethod
-    def update_guest_preferences(cls, group_id, preferences):
+    def join_group(cls, group_code):
+        try:
+            response = requests.post(
+                f"{EAT_TOGETHER_SERVICE_URL}/join",
+                headers=cls.get_headers(),
+                json={"group_code": group_code},
+            )
+            return cls.handle_response(response)
+        except requests.RequestException:
+            flash("Failed to join group")
+            raise APIError("Group join failed")
+
+    @classmethod
+    def leave_group(cls):
+        try:
+            response = requests.delete(
+                f"{EAT_TOGETHER_SERVICE_URL}/leave",
+                headers=cls.get_headers(),
+            )
+            return cls.handle_response(response)
+        except requests.RequestException:
+            flash("Failed to leave group")
+            raise APIError("Group leave failed")
+
+    @classmethod
+    def update_guest(cls, group_id, preferences, restrictions):
         try:
             response = requests.put(
                 f"{EAT_TOGETHER_SERVICE_URL}/{group_id}/update-guest",
                 headers=cls.get_headers(),
-                params=cls.get_access_token_params(),
-                json=preferences,
+                json={
+                    "guest_preferences": preferences,
+                    "guest_restrictions": restrictions,
+                },
             )
             return cls.handle_response(response)
         except requests.RequestException:
@@ -331,7 +354,6 @@ class APIClient:
             response = requests.get(
                 f"{EAT_TOGETHER_SERVICE_URL}/{group_id}/food-matches",
                 headers=cls.get_headers(),
-                params=cls.get_access_token_params(),
             )
             return cls.handle_response(response)
         except requests.RequestException:
@@ -344,7 +366,7 @@ class APIClient:
             response = requests.get(
                 f"{EAT_TOGETHER_SERVICE_URL}/user",
                 headers=cls.get_headers(),
-                params={"email": email, **cls.get_access_token_params()},
+                params={"email": email},
             )
             return cls.handle_response(response)
         except requests.RequestException:

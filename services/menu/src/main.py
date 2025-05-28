@@ -115,7 +115,7 @@ def delete_restaurant(restaurant_id: str):
         image_path = f"restaurant/{restaurant[0]['image_url'].split('/')[-1][:-1]}"
         supabase.storage.from_("media").remove([image_path])
 
-    return 204, None
+    return None
 
 
 @app.get("/restaurant")
@@ -252,7 +252,7 @@ def list_matches_restaurant(
                     MenuResponse(**menu)
                     for menu in matches_restaurant_menus[restaurant["id"]]
                 ],
-                distance=distance,
+                distance=int(distance),
                 food_matches=len(matches_restaurant_menus[restaurant["id"]]),
             )
         )
@@ -497,7 +497,7 @@ def delete_menu(menu_id: str):
     # Delete ratings associated with the menu
     supabase.table("Rating").delete().eq("menu", menu_id).execute()
 
-    return 204, None
+    return None
 
 
 @app.post("/menu/{menu_id}/rate", status_code=201)

@@ -74,27 +74,20 @@
 
         <div class="col-md-9">
             <div class="row">
-                {% for i in range(6) %}
+                {% for restaurant_menu in matches %}
                 <div class="col-md-6 mb-4">
-                    <div class="card h-100">
-                        <img src="https://via.placeholder.com/400x200" class="card-img-top" alt="Restaurant">
+                    <div class="card">
+                        <img src="{{ restaurant_menu.restaurant.image_url}}" class="card-img-top" alt="Restaurant">
                         <div class="card-body">
-                            <h5 class="card-title">Restaurant Name</h5>
-                            <p class="text-muted mb-2">Korean • $$</p>
-                            <div class="mb-2">
-                                <span class="text-warning">★★★★☆</span>
-                                <small class="text-muted">4.5 (200+ reviews)</small>
-                            </div>
-                            <p class="card-text">Short description of the restaurant and why it matches the group's preferences.</p>
+                            <h5 class="card-title">{{ restaurant_menu.restaurant.name }}</h5>
+                            <p class="card-text">{{ restaurant_menu.restaurant.address }}</p>
                             <div class="d-flex gap-2">
-                                <span class="badge bg-success">90% match</span>
-                                <span class="badge bg-info">1.2 km away</span>
+                                <span class="badge bg-success">{{restaurant_menu.menus|length}} matches</span>
                             </div>
                         </div>
                         <div class="card-footer bg-white">
                             <div class="d-flex justify-content-between align-items-center">
                                 <a href="{{ url_for('restaurant_detail', id=1) }}" class="btn btn-primary">View Menu</a>
-                                <button class="btn btn-outline-primary">Share</button>
                             </div>
                         </div>
                     </div>
@@ -137,13 +130,54 @@
 document.addEventListener('DOMContentLoaded', function() {
     const rouletteModal = document.getElementById('rouletteModal');
     const resultText = document.getElementById('roulette-result');
+    const spinAgainBtn = rouletteModal.querySelector('.btn-primary');
+    const restaurants = {{ matches|tojson|safe }};
     
-    rouletteModal.addEventListener('show.bs.modal', function() {
-        // Simulate roulette spinning
+    function resetModal() {
+        // Reset text and show spinner
+        resultText.textContent = 'Finding a random restaurant...';
+        const spinner = rouletteModal.querySelector('.spinner-border');
+        spinner.style.display = 'inline-block';
+        
+        // Remove any previous details
+        const details = resultText.nextElementSibling;
+        if (details && details.className === 'mt-3') {
+            details.remove();
+        }
+    }
+    
+    function selectRandomRestaurant() {
+        resetModal();
+        
+        // Wait for 2 seconds before showing the result
         setTimeout(() => {
-            resultText.textContent = 'Restaurant Name Selected!';
+            const randomIndex = Math.floor(Math.random() * restaurants.length);
+            const selectedRestaurant = restaurants[randomIndex];
+            
+            const spinner = rouletteModal.querySelector('.spinner-border');
+            spinner.style.display = 'none';
+            resultText.textContent = selectedRestaurant.restaurant.name;
+            
+            // Add additional restaurant details
+            const details = document.createElement('div');
+            details.className = 'mt-3';
+            details.innerHTML = `
+                <p>${selectedRestaurant.restaurant.address}</p>
+                <p class="text-success">${selectedRestaurant.menus.length} matching items</p>
+                <a href="/restaurant/${selectedRestaurant.restaurant.id}" class="btn btn-primary mt-2">View Details</a>
+            `;
+            resultText.parentNode.insertBefore(details, resultText.nextSibling);
         }, 2000);
-    });
+    }
+    
+    // Initial spin when modal opens
+    rouletteModal.addEventListener('show.bs.modal', selectRandomRestaurant);
+    
+    // Cleanup when modal is hidden
+    rouletteModal.addEventListener('hidden.bs.modal', resetModal);
+    
+    // Handle spin again button
+    spinAgainBtn.addEventListener('click', selectRandomRestaurant);
 });
 </script>
 {% endblock %}

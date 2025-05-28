@@ -1,8 +1,11 @@
 document.addEventListener('DOMContentLoaded', function () {
+    console.log('Menu detail page loaded');
     const stars = document.querySelectorAll('.rating-star');
+    console.log('Found stars:', stars.length);
     const reviewTextArea = document.getElementById('reviewText');
     const submitButton = document.getElementById('submitReview');
     let currentRating = document.querySelector('.rating-star[style*="gold"]')?.dataset.rating || 0;
+    console.log('Current rating:', currentRating);
     let selectedRating = currentRating;
 
     // Highlight stars on hover

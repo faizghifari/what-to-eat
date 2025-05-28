@@ -118,8 +118,6 @@ async fn router(
         _ => return bad_request(method, path),
     };
 
-    log::info!("Checkpoint 1, {target:?} authorizing request...");
-
     let authorised: Result<(), auth::Reason> = auth::verify(&request, auth_client).await;
     if let Err(reason) = authorised {
         log::warn!("Unauthorised access attempt. Authentication failure reason: {reason}");

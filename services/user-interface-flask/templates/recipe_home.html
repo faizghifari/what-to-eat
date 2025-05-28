@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h2>Find Recipes</h2>
+            <div class="search-bar">
+                <input type="text" class="form-control" placeholder="Search for recipes...">
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col">
+            <h3>Recommended Recipes</h3>
+            <div class="row">
+                {% for recipe in recipes %}
+                <div class="col-md-4 mb-4">
+                    <div class="card recipe-card">
+                        <img src="{{ recipe.image_url }}" class="card-img-top" alt="Recipe">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ recipe.name }}</h5>
+                            <p class="card-text">
+                                <small class="text-muted">
+                                    <span class="me-3">⏰ {{ recipe.estimated_time or 'N/A' }}</span>
+                                    <span>⭐ {{ recipe.rating or 'N/A' }}</span>
+                                </small>
+                            </p>
+                            <p class="card-text">{{ recipe.description }}</p>
+                            <a href="{{ url_for('recipe_detail', id=recipe.id) }}" class="btn btn-primary">View Recipe</a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div id="searchRecipeModal" class="modal fade" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Search Internet Recipes</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Do you want to search recipes from the internet? It will take around 1 minute.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary">Search Internet</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.querySelector('.search-bar input');
+    let timeoutId;
+
+    searchInput.addEventListener('input', function() {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+            if (searchInput.value.trim()) {
+                const modal = new bootstrap.Modal(document.getElementById('searchRecipeModal'));
+                modal.show();
+            }
+        }, 1000);
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

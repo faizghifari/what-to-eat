@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('eat_together') }}">Eat Together</a></li>
+                    <li class="breadcrumb-item active">Group Recommendations</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2>Group Recommendations</h2>
+                    <p class="text-muted">Finding the best matches for everyone in the group</p>
+                </div>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#rouletteModal">
+                    Random Roulette
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title mb-4">Filters</h4>
+                    
+                    <div class="mb-4">
+                        <h6>Price Range</h6>
+                        <div class="btn-group w-100">
+                            <input type="checkbox" class="btn-check" id="price1" autocomplete="off">
+                            <label class="btn btn-outline-primary" for="price1">$</label>
+                            <input type="checkbox" class="btn-check" id="price2" autocomplete="off">
+                            <label class="btn btn-outline-primary" for="price2">$$</label>
+                            <input type="checkbox" class="btn-check" id="price3" autocomplete="off">
+                            <label class="btn btn-outline-primary" for="price3">$$$</label>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6>Distance</h6>
+                        <select class="form-select">
+                            <option>Any distance</option>
+                            <option>Within 1 km</option>
+                            <option>Within 3 km</option>
+                            <option>Within 5 km</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6>Sort By</h6>
+                        <select class="form-select">
+                            <option>Best Match</option>
+                            <option>Rating</option>
+                            <option>Distance</option>
+                            <option>Price</option>
+                        </select>
+                    </div>
+
+                    <div class="d-grid">
+                        <button class="btn btn-primary">Apply Filters</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-9">
+            <div class="row">
+                {% for restaurant in recommendations %}
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <img src="{{ restaurant.image_url }}" class="card-img-top" alt="Restaurant">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ restaurant.name }}</h5>
+                            <div class="mb-2">
+                                <small class="text-muted">{{ restaurant.average_rating }}</small>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <a href="{{ url_for('restaurant_detail', id=restaurant.id) }}" class="btn btn-primary">View Menu</a>
+                                <button class="btn btn-outline-primary">Share</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Random Roulette Modal -->
+<div class="modal fade" id="rouletteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Random Restaurant Roulette</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div class="roulette-spinner mb-4">
+                    <!-- Add a spinning animation here -->
+                    <div class="spinner-border text-primary" style="width: 5rem; height: 5rem;" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+                <h4 id="roulette-result" class="mb-3">Finding a random restaurant...</h4>
+                <p class="text-muted">The selected restaurant will match your group's preferences</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary">Spin Again</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const rouletteModal = document.getElementById('rouletteModal');
+    const resultText = document.getElementById('roulette-result');
+    
+    rouletteModal.addEventListener('show.bs.modal', function() {
+        // Simulate roulette spinning
+        setTimeout(() => {
+            resultText.textContent = 'Restaurant Name Selected!';
+        }, 2000);
+    });
+});
+</script>
+{% endblock %}

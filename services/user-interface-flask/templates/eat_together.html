@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h2>Eat Together</h2>
+            <p class="text-muted">Find the perfect restaurant for your group</p>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body text-center p-5">
+                    <h3>Create New Group</h3>
+                    <p class="text-muted mb-4">Start a new group and invite your friends</p>
+                    <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#createGroupModal">
+                        Create Group
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body text-center p-5">
+                    <h3>Join Existing Group</h3>
+                    <p class="text-muted mb-4">Enter a group code to join</p>
+                    <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#joinGroupModal">
+                        Join Group
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col">
+            <h3>Your Groups</h3>
+            <div class="row">
+                {% for group in groups %}
+                <div class="col-md-4 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ group.group_name }}</h5>
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('group_settings', id=group.id) }}" class="btn btn-outline-primary">Settings</a>
+                                <a href="{{ url_for('group_recommendations', id=group.id) }}" class="btn btn-primary">Get Recommendations</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Group Modal -->
+<div class="modal fade" id="createGroupModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create New Group</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form method="post" action="{{ url_for('create_group') }}">
+                    <div class="mb-3">
+                        <label for="groupName" class="form-label">Group Name</label>
+                        <input type="text" class="form-control" id="groupName" name="group_name" required>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Create Group</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Join Group Modal -->
+<div class="modal fade" id="joinGroupModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Join Group</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form method="post" action="{{ url_for('join_group') }}">
+                    <div class="mb-3">
+                        <label for="groupCode" class="form-label">Enter Group Code</label>
+                        <input type="text" class="form-control" id="groupCode" name="group_code" required>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Join Group</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

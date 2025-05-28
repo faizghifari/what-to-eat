@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('recipe_home') }}">Recipes</a></li>
+                    <li class="breadcrumb-item active">{{ recipe.name }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <img src="{{ recipe.image_url }}" class="img-fluid rounded mb-4" alt="Recipe">
+            
+            <h2 class="mb-3">{{ recipe.name }}</h2>
+            
+            <div class="d-flex gap-4 mb-4">
+                <div>
+                    <strong>⏰ Estimated Time:</strong> {{ recipe.estimated_time }}
+                </div>
+                <div>
+                    <strong>⭐ Rating:</strong> {{ recipe.rating }}/5
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <h4>Description</h4>
+                <p>{{ recipe.description }}</p>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h4>Ingredients & Dietary Information</h4>
+                    <ul class="list-unstyled">
+                        {% for ingredient in recipe.ingredients %}
+                        <li class="mb-2">
+                            <input type="checkbox" class="form-check-input me-2">
+                            <strong>{{ ingredient.name }}</strong>
+                            {% if ingredient.description %}<span class="text-muted small"> - {{ ingredient.description }}</span>{% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h4>Equipment Needed</h4>
+                    <ul class="list-unstyled">
+                        {% for tool in recipe.tools %}
+                        <li class="mb-2">
+                            <input type="checkbox" class="form-check-input me-2">
+                            <strong>{{ tool.name }}</strong>
+                            {% if tool.description %}<span class="text-muted small"> - {{ tool.description }}</span>{% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <h4>Instructions</h4>
+                <ol>
+                    {% for step in recipe.instructions %}
+                    <li class="mb-3">{{ step }}</li>
+                    {% endfor %}
+                </ol>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

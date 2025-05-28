@@ -113,15 +113,20 @@ async fn router(
         "profile" => Target::Profile,
         "recipe" => Target::Recipe,
         "menu" => Target::Menu,
-        "ets" => Target::ETS,
+        "restaurant" => Target::Menu,
+        "eat-together" => Target::ETS,
         _ => return bad_request(method, path),
     };
+
+    log::info!("Checkpoint 1, {target:?} authorizing request...");
 
     let authorised: Result<(), auth::Reason> = auth::verify(&request, auth_client).await;
     if let Err(reason) = authorised {
         log::warn!("Unauthorised access attempt. Authentication failure reason: {reason}");
         return response(Some(format!("{reason}")), StatusCode::UNAUTHORIZED);
     }
+
+    log::info!("Received request for {target:?} service. Method: {method} | Path: {path}");
 
     forward_to_service(target, request).await
 }
@@ -162,6 +167,7 @@ async fn forward_to_service(
     }
     let io: TokioIo<TcpStream> = TokioIo::new(stream.unwrap());
 
+
     // Create HTTP Client
     let handshake_success: Result<_, _> =
         handshake::<TokioIo<TcpStream>, hyper::body::Incoming>(io).await;
@@ -171,10 +177,14 @@ async fn forward_to_service(
     }
     let (mut sender, conn): (SendRequest<_>, Connection<_, _>) = handshake_success.unwrap();
 
-    if let Err(e) = conn.await {
-        log::error!("Failed to connect with {uri}. Reason: {e}");
-        return response::<&str>(None, StatusCode::INTERNAL_SERVER_ERROR);
-    }
+
+    // Spawn the connection in the background instead of awaiting it
+    // This allows the sender to be used immediately
+    let _ = tokio::spawn(async move {
+        if let Err(e) = conn.await {
+            log::error!("Connection error with {uri}: {e}");
+        }
+    });
 
     // Forward request and wait for response
     let incoming_response: Result<_, _> = sender.send_request(request).await;
@@ -183,11 +193,13 @@ async fn forward_to_service(
         return response::<&str>(None, StatusCode::INTERNAL_SERVER_ERROR);
     }
 
+
     // Translate incoming response to outgoing response
     let received_response: Response<hyper::body::Incoming> = incoming_response.unwrap();
     let status: StatusCode = received_response.status();
     let headers: HeaderMap = received_response.headers().clone();
     let body: BoxBody<_, _> = received_response.boxed();
+
 
     let mut outgoing_response: Response<_> = Response::new(body);
     *outgoing_response.status_mut() = status;
@@ -196,6 +208,7 @@ async fn forward_to_service(
 }
 
 #[allow(clippy::upper_case_acronyms)]
+#[derive(Debug)]
 enum Target {
     Profile,
     Recipe,

@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('eat_together') }}">Eat Together</a></li>
+                    <li class="breadcrumb-item active">Group Settings</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+    <div class="row mb-4">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2>Group Settings</h2>
+                    <p class="text-muted">Group Code: <span class="fw-bold">{{ group.group_code }}</span></p>
+                </div>
+                <button class="btn btn-outline-primary">Share Group Code</button>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title mb-4">Group Info</h3>
+                    <form method="post" action="{{ url_for('update_group_info', id=group.id) }}">
+                        <div class="mb-3">
+                            <label class="form-label">Group Name</label>
+                            <input type="text" class="form-control" name="group_name" value="{{ group.group_name }}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Leader</label>
+                            <input type="text" class="form-control" value="{{ group.leader.email }}" readonly>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title mb-4">Members</h3>
+                    <div class="mb-4">
+                        <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#inviteMemberModal">Invite Member</button>
+                    </div>
+                    <div class="members-list">
+                        {% for member in members %}
+                        <div class="preference-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="me-2">{{ member.user.email }}{% if member.user.uuid == group.leader.uuid %} (Admin){% endif %}</span>
+                                {% if member.user.uuid == group.leader.uuid %}
+                                <span class="badge bg-primary">Admin</span>
+                                {% endif %}
+                            </div>
+                            {% if member.user.uuid != group.leader.uuid %}
+                            <div class="btn-group">
+                                <form method="post" action="{{ url_for('make_admin', group_id=group.id, user_id=member.user.uuid) }}">
+                                    <button class="btn btn-sm btn-outline-primary" type="submit">Make Admin</button>
+                                </form>
+                                <form method="post" action="{{ url_for('remove_member', group_id=group.id, user_id=member.user.uuid) }}">
+                                    <button class="btn btn-sm btn-outline-danger" type="submit">Remove</button>
+                                </form>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col">
+            <div class="card border-danger">
+                <div class="card-body">
+                    <h3 class="card-title text-danger mb-4">Danger Zone</h3>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-1">Leave Group</h5>
+                            <p class="text-muted mb-0">You will no longer have access to this group</p>
+                        </div>
+                        <form method="post" action="{{ url_for('leave_group', group_id=group.id) }}">
+                            <button class="btn btn-outline-danger" type="submit">Leave Group</button>
+                        </form>
+                    </div>
+                    {% if current_user.uuid == group.leader.uuid %}
+                    <hr>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-1">Delete Group</h5>
+                            <p class="text-muted mb-0">This action cannot be undone</p>
+                        </div>
+                        <form method="post" action="{{ url_for('delete_group', group_id=group.id) }}">
+                            <button class="btn btn-danger" type="submit">Delete Group</button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Invite Member Modal -->
+<div class="modal fade" id="inviteMemberModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Invite Member</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Share this code with others to join the group</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" value="{{ group.group_code }}" readonly>
+                        <button class="btn btn-outline-primary">Copy</button>
+                    </div>
+                </div>
+                <hr>
+                <form method="post" action="{{ url_for('invite_by_email', group_id=group.id) }}">
+                    <div class="mb-3">
+                        <label class="form-label">Or invite by email</label>
+                        <input type="email" class="form-control" name="email" placeholder="Enter email address">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Send Invite</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

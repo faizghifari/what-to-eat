@@ -17,18 +17,9 @@ This document describes the REST API contract for the Recipe Recommendation Serv
 | estimated_price | float  | Estimated price                              |
 | estimated_time  | string | Estimated time (e.g. '30 min')               |
 | image_url       | string | Image URL                                    |
+| average_rating  | float  | Average rating for the recipe (null if no ratings) |
 
-- `ingredients` and `tools` are arrays of objects, e.g.:
-  ```json
-  [
-    { "name": "egg", "description": "A large egg" },
-    { "name": "flour", "description": "All-purpose flour" }
-  ]
-  ```
-- `instructions` is an array of strings, e.g.:
-  ```json
-  ["Mix ingredients.", "Bake at 180C for 30 minutes."]
-  ```
+- `average_rating` is included in all recipe responses and is calculated as the mean of all ratings for that recipe. If there are no ratings, it is null.
 
 ---
 
@@ -79,7 +70,8 @@ All endpoints expect and return JSON.
   "instructions": ["step 1", "step 2"],
   "estimated_price": 10.5,
   "estimated_time": "string",
-  "image_url": "string"
+  "image_url": "string",
+  "average_rating": null
 }
 ```
 
@@ -103,7 +95,18 @@ All endpoints expect and return JSON.
 
 ```json
 [
-  { ...Recipe },
+  {
+    "id": 1,
+    "name": "string",
+    "description": "string",
+    "ingredients": [{ "name": "egg", "description": "A large egg" }],
+    "tools": [{ "name": "pan", "description": "Non-stick pan" }],
+    "instructions": ["step 1", "step 2"],
+    "estimated_price": 10.5,
+    "estimated_time": "string",
+    "image_url": "string",
+    "average_rating": 4.5
+  },
   ...
 ]
 ```
@@ -117,7 +120,18 @@ All endpoints expect and return JSON.
   - Code: `200 OK`
 
 ```json
-{ ...Recipe }
+{
+  "id": 1,
+  "name": "string",
+  "description": "string",
+  "ingredients": [{ "name": "egg", "description": "A large egg" }],
+  "tools": [{ "name": "pan", "description": "Non-stick pan" }],
+  "instructions": ["step 1", "step 2"],
+  "estimated_price": 10.5,
+  "estimated_time": "string",
+  "image_url": "string",
+  "average_rating": 4.5
+}
 ```
 
 - **404 Response:**
@@ -137,7 +151,18 @@ All endpoints expect and return JSON.
   - Code: `200 OK`
 
 ```json
-{ ...Recipe }
+{
+  "id": 1,
+  "name": "string",
+  "description": "string",
+  "ingredients": [{ "name": "egg", "description": "A large egg" }],
+  "tools": [{ "name": "pan", "description": "Non-stick pan" }],
+  "instructions": ["step 1", "step 2"],
+  "estimated_price": 10.5,
+  "estimated_time": "string",
+  "image_url": "string",
+  "average_rating": 4.5
+}
 ```
 
 - **400 Response:**
@@ -178,7 +203,21 @@ All endpoints expect and return JSON.
 
 ```json
 {
-  "results": [ { ...Recipe }, ... ]
+  "results": [
+    {
+      "id": 1,
+      "name": "string",
+      "description": "string",
+      "ingredients": [{ "name": "egg", "description": "A large egg" }],
+      "tools": [{ "name": "pan", "description": "Non-stick pan" }],
+      "instructions": ["step 1", "step 2"],
+      "estimated_price": 10.5,
+      "estimated_time": "string",
+      "image_url": "string",
+      "average_rating": 4.5
+    },
+    ...
+  ]
 }
 ```
 
@@ -204,7 +243,21 @@ All endpoints expect and return JSON.
 
 ```json
 {
-  "results": [ { ...Recipe }, ... ]
+  "results": [
+    {
+      "id": 1,
+      "name": "string",
+      "description": "string",
+      "ingredients": [{ "name": "egg", "description": "A large egg" }],
+      "tools": [{ "name": "pan", "description": "Non-stick pan" }],
+      "instructions": ["step 1", "step 2"],
+      "estimated_price": 10.5,
+      "estimated_time": "string",
+      "image_url": "string",
+      "average_rating": 4.5
+    },
+    ...
+  ]
 }
 ```
 

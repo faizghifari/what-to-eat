@@ -5,10 +5,18 @@ from typing import Annotated
 from fastapi import APIRouter, Header, HTTPException
 from fastapi.responses import JSONResponse
 
-from recipe.utils import supabase, get_user_profile, extract_names, filter_recipes, GOOGLE_GENAI_MODEL
+from recipe.utils import (
+    supabase,
+    get_user_profile,
+    extract_names,
+    filter_recipes,
+    GOOGLE_GENAI_MODEL,
+    get_average_rating,
+)
 from recipe.models import Recipe
 
 router = APIRouter()
+
 
 @router.get("/recipe/matches")
 def recommend_recipes(x_user_uuid: Annotated[str, Header(alias="X-User-uuid")]):
@@ -17,10 +25,22 @@ def recommend_recipes(x_user_uuid: Annotated[str, Header(alias="X-User-uuid")]):
     available_tools = extract_names(profile.get("available_tools", {}))
     available_ingredients = extract_names(profile.get("available_ingredients", {}))
     res = supabase.table("Recipe").select("*").execute()
-    filtered = filter_recipes(res.data, restrictions, available_tools, available_ingredients)
+    filtered = filter_recipes(
+        res.data, restrictions, available_tools, available_ingredients
+    )
+    # Add average_rating for each recipe
+    for r in filtered:
+        r["average_rating"] = get_average_rating(r["id"])
     if not filtered:
-        return JSONResponse(status_code=200, content={"message": "No recipes found. Search the internet?", "results": []})
+        return JSONResponse(
+            status_code=200,
+            content={
+                "message": "No recipes found. Search the internet?",
+                "results": [],
+            },
+        )
     return {"results": filtered}
+
 
 @router.get("/recipe/matches_web")
 def recommend_recipes_search(x_user_uuid: Annotated[str, Header(alias="X-User-uuid")]):
@@ -37,6 +57,7 @@ def recommend_recipes_search(x_user_uuid: Annotated[str, Header(alias="X-User-uu
     )
     from google import genai
     from google.genai.types import Tool, GenerateContentConfig, GoogleSearch
+
     client = genai.Client()
     model_id = GOOGLE_GENAI_MODEL
     google_search_tool = Tool(google_search=GoogleSearch())
@@ -46,10 +67,10 @@ def recommend_recipes_search(x_user_uuid: Annotated[str, Header(alias="X-User-uu
         config=GenerateContentConfig(
             tools=[google_search_tool],
             response_modalities=["TEXT"],
-        )
+        ),
     )
     recipes = "".join(part.text for part in response.candidates[0].content.parts)
-    
+
     prompt_parts = (
         "Given this web search result, extract the recipes in JSON format:\n"
         f"{recipes}\n"
@@ -60,29 +81,45 @@ def recommend_recipes_search(x_user_uuid: Annotated[str, Header(alias="X-User-uu
         model=model_id,
         contents=prompt_parts,
         config={
-            'response_mime_type': 'application/json',
-            'response_schema': list[Recipe]
-        }
+            "response_mime_type": "application/json",
+            "response_schema": list[Recipe],
+        },
     )
     try:
         recipes_to_store = json.loads(response.candidates[0].content.parts[0].text)
     except Exception:
         from json import JSONDecodeError
-        raise JSONDecodeError("Failed to parse JSON", text, 0)
-    
+
+        raise JSONDecodeError(
+            "Failed to parse JSON", response.candidates[0].content.parts[0].text, 0
+        )
+
     if recipes_to_store:
         try:
             stored = supabase.table("Recipe").insert(recipes_to_store).execute()
-            if not stored.data or (isinstance(stored.data, list) and len(stored.data) == 0):
-                raise HTTPException(status_code=400, detail="Failed to create gathered recipes")
+            if not stored.data or (
+                isinstance(stored.data, list) and len(stored.data) == 0
+            ):
+                raise HTTPException(
+                    status_code=400, detail="Failed to create gathered recipes"
+                )
+            # Add average_rating to each recipe
+            for r in stored.data:
+                r["average_rating"] = get_average_rating(r["id"])
             return {
                 "results": stored.data,
             }
         except Exception as e:
-            detail = getattr(e, 'message', str(e))
-            if hasattr(e, 'args') and e.args and isinstance(e.args[0], dict):
+            detail = getattr(e, "message", str(e))
+            if hasattr(e, "args") and e.args and isinstance(e.args[0], dict):
                 err = e.args[0]
-                detail = err.get('message', str(e))
+                detail = err.get("message", str(e))
             raise HTTPException(status_code=400, detail=f"Supabase error: {detail}")
     else:
-        return JSONResponse(status_code=200, content={"message": "No matched recipes found from the internet", "results": []})
+        return JSONResponse(
+            status_code=200,
+            content={
+                "message": "No matched recipes found from the internet",
+                "results": [],
+            },
+        )

@@ -53,10 +53,15 @@ This service provides recipe recommendations and recipe CRUD operations. It is i
 
 ## Testing
 
-- Run tests with pytest:
+- Run tests with pytest and see coverage:
   ```cmd
   pytest --cov=src
   ```
+- To see a detailed coverage report with missing lines, run:
+  ```cmd
+  pytest --cov=src --cov-report=term-missing
+  ```
+- Run these commands from the `services/recipe` directory.
 - Tests cover all CRUD endpoints and recommendation logic, including error cases.
 
 ## Notes

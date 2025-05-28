@@ -15,20 +15,20 @@
         <div class="col">
             <h3>Recommended Recipes</h3>
             <div class="row">
-                {% for i in range(6) %}
+                {% for recipe in recipes %}
                 <div class="col-md-4 mb-4">
                     <div class="card recipe-card">
-                        <img src="https://via.placeholder.com/300x200" class="card-img-top" alt="Recipe">
+                        <img src="{{ recipe.image_url }}" class="card-img-top" alt="Recipe">
                         <div class="card-body">
-                            <h5 class="card-title">Recipe Name</h5>
+                            <h5 class="card-title">{{ recipe.name }}</h5>
                             <p class="card-text">
                                 <small class="text-muted">
-                                    <span class="me-3">⏰ 30 mins</span>
-                                    <span>⭐ 4.5/5</span>
+                                    <span class="me-3">⏰ {{ recipe.estimated_time or 'N/A' }}</span>
+                                    <span>⭐ {{ recipe.rating or 'N/A' }}</span>
                                 </small>
                             </p>
-                            <p class="card-text">Brief description of the recipe</p>
-                            <a href="{{ url_for('recipe_detail', id=1) }}" class="btn btn-primary">View Recipe</a>
+                            <p class="card-text">{{ recipe.description }}</p>
+                            <a href="{{ url_for('recipe_detail', id=recipe.id) }}" class="btn btn-primary">View Recipe</a>
                         </div>
                     </div>
                 </div>

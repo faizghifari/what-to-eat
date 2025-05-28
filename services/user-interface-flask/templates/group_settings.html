@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('eat_together') }}">Eat Together</a></li>
+                    <li class="breadcrumb-item active">Group Settings</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2>Group Settings</h2>
+                    <p class="text-muted">Group Code: <span class="fw-bold">ABC123</span></p>
+                </div>
+                <button class="btn btn-outline-primary">
+                    Share Group Code
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title mb-4">Group Info</h3>
+                    <form>
+                        <div class="mb-3">
+                            <label class="form-label">Group Name</label>
+                            <input type="text" class="form-control" value="Friends Lunch Group">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" rows="3">Weekly lunch meetup group</textarea>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title mb-4">Members</h3>
+                    <div class="mb-4">
+                        <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#inviteMemberModal">
+                            Invite Member
+                        </button>
+                    </div>
+
+                    <div class="members-list">
+                        {% for member in ['You (Admin)', 'John Doe', 'Jane Smith', 'Mike Johnson'] %}
+                        <div class="preference-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="me-2">{{ member }}</span>
+                                {% if loop.index == 1 %}
+                                <span class="badge bg-primary">Admin</span>
+                                {% endif %}
+                            </div>
+                            {% if loop.index != 1 %}
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-outline-primary">Make Admin</button>
+                                <button class="btn btn-sm btn-outline-danger">Remove</button>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title mb-4">Group Preferences</h3>
+                    <p class="text-muted mb-4">These preferences will be combined with individual member preferences when making recommendations</p>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Cuisine Types</h5>
+                            <div class="d-flex flex-wrap gap-2 mb-4">
+                                {% for cuisine in ['Korean', 'Japanese', 'Chinese', 'Italian', 'Mexican', 'Indian'] %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="group-cuisine-{{ loop.index }}">
+                                    <label class="form-check-label" for="group-cuisine-{{ loop.index }}">
+                                        {{ cuisine }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h5>Dietary Requirements</h5>
+                            <div class="d-flex flex-wrap gap-2 mb-4">
+                                {% for diet in ['Vegetarian Options', 'Vegan Options', 'Gluten-Free Options', 'Halal', 'Kosher'] %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="group-diet-{{ loop.index }}">
+                                    <label class="form-check-label" for="group-diet-{{ loop.index }}">
+                                        {{ diet }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <button class="btn btn-secondary">Reset</button>
+                        <button class="btn btn-primary">Save Changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col">
+            <div class="card border-danger">
+                <div class="card-body">
+                    <h3 class="card-title text-danger mb-4">Danger Zone</h3>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-1">Leave Group</h5>
+                            <p class="text-muted mb-0">You will no longer have access to this group</p>
+                        </div>
+                        <button class="btn btn-outline-danger">Leave Group</button>
+                    </div>
+                    {% if true %} {# Replace with actual admin check #}
+                    <hr>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-1">Delete Group</h5>
+                            <p class="text-muted mb-0">This action cannot be undone</p>
+                        </div>
+                        <button class="btn btn-danger">Delete Group</button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Invite Member Modal -->
+<div class="modal fade" id="inviteMemberModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Invite Member</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Share this code with others to join the group</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" value="ABC123" readonly>
+                        <button class="btn btn-outline-primary">Copy</button>
+                    </div>
+                </div>
+                <hr>
+                <div class="mb-3">
+                    <label class="form-label">Or invite by email</label>
+                    <input type="email" class="form-control" placeholder="Enter email address">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary">Send Invite</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

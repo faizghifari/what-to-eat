@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h2>Eat Together</h2>
+            <p class="text-muted">Find the perfect restaurant for your group</p>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body text-center p-5">
+                    <h3>Create New Group</h3>
+                    <p class="text-muted mb-4">Start a new group and invite your friends</p>
+                    <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#createGroupModal">
+                        Create Group
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body text-center p-5">
+                    <h3>Join Existing Group</h3>
+                    <p class="text-muted mb-4">Enter a group code to join</p>
+                    <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#joinGroupModal">
+                        Join Group
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col">
+            <h3>Your Groups</h3>
+            <div class="row">
+                {% for i in range(3) %}
+                <div class="col-md-4 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Group Name</h5>
+                            <p class="text-muted mb-3">4 members</p>
+                            <div class="mb-3">
+                                <small class="text-muted">Last active: 2 hours ago</small>
+                            </div>
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('group_settings', id=1) }}" class="btn btn-outline-primary">Settings</a>
+                                <a href="{{ url_for('group_recommendations', id=1) }}" class="btn btn-primary">Get Recommendations</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Group Modal -->
+<div class="modal fade" id="createGroupModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create New Group</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="mb-3">
+                        <label for="groupName" class="form-label">Group Name</label>
+                        <input type="text" class="form-control" id="groupName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="groupDescription" class="form-label">Description (Optional)</label>
+                        <textarea class="form-control" id="groupDescription" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary">Create Group</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Join Group Modal -->
+<div class="modal fade" id="joinGroupModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Join Group</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="mb-3">
+                        <label for="groupCode" class="form-label">Enter Group Code</label>
+                        <input type="text" class="form-control" id="groupCode" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary">Join Group</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

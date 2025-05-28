@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('food_home') }}">Food</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('restaurant_matches', id=1) }}">Restaurant Name</a></li>
+                    <li class="breadcrumb-item active">Menu Item Name</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <img src="https://via.placeholder.com/600x400" class="img-fluid rounded" alt="Menu Item">
+        </div>
+        <div class="col-md-6">
+            <h2>Menu Item Name</h2>
+            <p class="text-muted">Restaurant Name</p>
+            <h4 class="text-primary mb-3">$10.99</h4>
+            
+            <div class="mb-4">
+                <h5>Description</h5>
+                <p>Detailed description of the menu item, including ingredients and preparation method.</p>
+            </div>
+
+            <div class="mb-4">
+                <h5>Nutritional Information</h5>
+                <div class="row">
+                    <div class="col-6">
+                        <p>Calories: 500</p>
+                        <p>Protein: 20g</p>
+                        <p>Carbs: 45g</p>
+                    </div>
+                    <div class="col-6">
+                        <p>Fat: 25g</p>
+                        <p>Fiber: 5g</p>
+                        <p>Sugar: 10g</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <h5>Dietary Information</h5>
+                <div class="d-flex gap-2 flex-wrap">
+                    <span class="badge bg-success">Vegetarian</span>
+                    <span class="badge bg-info">Gluten-Free</span>
+                    <span class="badge bg-warning">Contains Nuts</span>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button class="btn btn-primary">Order Now</button>
+                <button class="btn btn-outline-primary">Save for Later</button>
+                <button class="btn btn-outline-primary">Share</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-5">
+        <div class="col">
+            <h3>Similar Items</h3>
+            <div class="row">
+                {% for i in range(3) %}
+                <div class="col-md-4">
+                    <div class="card food-card">
+                        <img src="https://via.placeholder.com/300x200" class="card-img-top" alt="Similar Menu Item">
+                        <div class="card-body">
+                            <h5 class="card-title">Similar Item Name</h5>
+                            <p class="card-text">Brief description of the similar item</p>
+                            <p class="text-primary">$9.99</p>
+                            <a href="#" class="btn btn-primary">View Details</a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('recipe_home') }}">Recipes</a></li>
+                    <li class="breadcrumb-item active">Recipe Name</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <img src="https://via.placeholder.com/800x500" class="img-fluid rounded mb-4" alt="Recipe">
+            
+            <h2 class="mb-3">Recipe Name</h2>
+            
+            <div class="d-flex gap-4 mb-4">
+                <div>
+                    <strong>⏰ Prep Time:</strong> 15 mins
+                </div>
+                <div>
+                    <strong>⏰ Cook Time:</strong> 30 mins
+                </div>
+                <div>
+                    <strong>👥 Servings:</strong> 4
+                </div>
+                <div>
+                    <strong>⭐ Rating:</strong> 4.5/5
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <h4>Description</h4>
+                <p>Detailed description of the recipe, including background information and tips.</p>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h4>Ingredients</h4>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <input type="checkbox" class="form-check-input me-2">
+                            2 cups flour
+                        </li>
+                        <li class="mb-2">
+                            <input type="checkbox" class="form-check-input me-2">
+                            1 cup sugar
+                        </li>
+                        <!-- Add more ingredients -->
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h4>Equipment Needed</h4>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <input type="checkbox" class="form-check-input me-2">
+                            Mixing bowl
+                        </li>
+                        <li class="mb-2">
+                            <input type="checkbox" class="form-check-input me-2">
+                            Whisk
+                        </li>
+                        <!-- Add more equipment -->
+                    </ul>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <h4>Instructions</h4>
+                <ol>
+                    <li class="mb-3">First step of the recipe with detailed instructions.</li>
+                    <li class="mb-3">Second step with more instructions and tips.</li>
+                    <li class="mb-3">Third step explaining the process.</li>
+                    <!-- Add more steps -->
+                </ol>
+            </div>
+
+            <div class="mb-4">
+                <h4>Nutrition Information</h4>
+                <div class="row">
+                    <div class="col-md-3">
+                        <p>Calories: 300</p>
+                        <p>Protein: 15g</p>
+                    </div>
+                    <div class="col-md-3">
+                        <p>Carbs: 40g</p>
+                        <p>Fat: 10g</p>
+                    </div>
+                    <div class="col-md-3">
+                        <p>Fiber: 5g</p>
+                        <p>Sugar: 8g</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <h4>Dietary Information</h4>
+                <div class="d-flex gap-2 flex-wrap">
+                    <span class="badge bg-success">Vegetarian</span>
+                    <span class="badge bg-info">Gluten-Free</span>
+                    <span class="badge bg-warning">Contains Nuts</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h4>Save Recipe</h4>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary">Save to Collection</button>
+                        <button class="btn btn-outline-primary">Share Recipe</button>
+                        <button class="btn btn-outline-primary">Print Recipe</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <h4>Similar Recipes</h4>
+                    <div class="list-group list-group-flush">
+                        {% for i in range(3) %}
+                        <a href="#" class="list-group-item list-group-item-action">
+                            <div class="d-flex gap-3">
+                                <img src="https://via.placeholder.com/80" class="rounded" alt="Similar Recipe">
+                                <div>
+                                    <h6 class="mb-1">Similar Recipe Name</h6>
+                                    <small class="text-muted">30 mins • 4.5/5</small>
+                                </div>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

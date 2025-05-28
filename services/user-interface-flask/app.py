@@ -61,6 +61,20 @@ def signup():
         email = request.form.get("email")
         password = request.form.get("password")
         password2 = request.form.get("confirm_password")
+
+        # Server-side validation
+        if not email or not password or not password2:
+            flash("All fields are required.")
+            return render_template("signup.html")
+
+        if len(password) < 6:
+            flash("Password must be at least 6 characters long.")
+            return render_template("signup.html")
+
+        if password != password2:
+            flash("Passwords do not match.")
+            return render_template("signup.html")
+
         try:
             result = APIClient.signup(email, password, password2)
             if (
@@ -74,12 +88,8 @@ def signup():
 
                 return redirect(url_for("food_home"))
             flash("Registration failed. Please try again.")
-        except Exception as e:
+        except Exception:
             flash("Registration failed. Please try again.")
-
-        # Temporary bypass authentication
-        # session["user_uuid"] = "dummy-user-123"  # Dummy UUID for testing
-        # return redirect(url_for("food_home"))
     return render_template("signup.html")
 
 

@@ -92,7 +92,7 @@ class APIClient:
         try:
             response = requests.post(
                 f"{AUTH_SERVICE_URL}/signup",
-                json={"email": email, "password": password, "password2": password2},
+                json={"email": email, "password_1": password, "password_2": password2},
             )
             return cls.handle_response(response)
         except requests.RequestException:

@@ -113,15 +113,20 @@ async fn router(
         "profile" => Target::Profile,
         "recipe" => Target::Recipe,
         "menu" => Target::Menu,
-        "ets" => Target::ETS,
+        "restaurant" => Target::Menu,
+        "eat-together" => Target::ETS,
         _ => return bad_request(method, path),
     };
+
+    log::info!("Checkpoint 1, {target:?} authorizing request...");
 
     let authorised: Result<(), auth::Reason> = auth::verify(&request, auth_client).await;
     if let Err(reason) = authorised {
         log::warn!("Unauthorised access attempt. Authentication failure reason: {reason}");
         return response(Some(format!("{reason}")), StatusCode::UNAUTHORIZED);
     }
+
+    log::info!("Received request for {target:?} service. Method: {method} | Path: {path}");
 
     forward_to_service(target, request).await
 }
@@ -196,6 +201,7 @@ async fn forward_to_service(
 }
 
 #[allow(clippy::upper_case_acronyms)]
+#[derive(Debug)]
 enum Target {
     Profile,
     Recipe,

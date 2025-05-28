@@ -222,25 +222,14 @@ pub async fn verify(
     // Get Uuid
     let user_id: uuid::Uuid = get_uuid_from_request(request)?;
 
-    // Get access token from parameters
-    let parameters: Option<&str> = request.uri().query();
-    if parameters.is_none() {
-        return Err(Reason::InvalidQueryParameters);
+
+    // access token
+    let access_token: Option<&HeaderValue> = request.headers().get("access-token");
+    if access_token.is_none() {
+        return Err(Reason::InvalidUserId);
     }
-    let access_token_parameter: Option<&str> = parameters.unwrap().split('&').find_map(|param| {
-        let mut splitter: std::str::Split<'_, char> = param.split('=');
-        if splitter.next().is_some_and(|val| {
-            &val.to_lowercase() == "access_token" || &val.to_lowercase() == "access-token"
-        }) {
-            splitter.next()
-        } else {
-            None
-        }
-    });
-    if access_token_parameter.is_none() {
-        return Err(Reason::InvalidQueryParameters);
-    }
-    let access_token: &str = access_token_parameter.unwrap();
+
+    let access_token: &str = access_token.unwrap().to_str().map_err(|_| Reason::InvalidHeaders)?;
 
     // Get user info from DB
     let user: Result<User, _> = auth_client.get_user(access_token).await;
@@ -253,7 +242,7 @@ pub async fn verify(
 
 /// Get user UID from Query heaaders and convert to Uuid
 fn get_uuid_from_request(request: &Request<hyper::body::Incoming>) -> Result<uuid::Uuid, Reason> {
-    let uuid_header: Option<&HeaderValue> = request.headers().get("X-User-Uid");
+    let uuid_header: Option<&HeaderValue> = request.headers().get("X-User-Uuid");
     if uuid_header.is_none() {
         return Err(Reason::InvalidUserId);
     }
@@ -299,12 +288,13 @@ pub enum Reason {
     InvalidCredentials,
     InvalidUserId,
     InvalidQueryParameters,
+    InvalidHeaders,
 }
 impl std::fmt::Display for Reason {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Reason::InvalidCredentials => write!(f, "Invalid Credentials"),
-            Reason::InvalidUserId => write!(f, "Invalid Headers"),
+            Reason::InvalidUserId | Reason::InvalidHeaders => write!(f, "Invalid Headers"),
             Reason::InvalidQueryParameters => write!(f, "Invalid Query Parameters"),
         }
     }

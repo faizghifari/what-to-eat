@@ -15,14 +15,17 @@
         <div class="col">
             <h3>Popular Restaurants</h3>
             <div class="row">
-                {% for i in range(4) %}
+                {% for restaurant in restaurants %}
                 <div class="col-md-3">
                     <div class="card food-card">
-                        <img src="https://via.placeholder.com/300x200" class="card-img-top" alt="Restaurant">
+                        <img src="{{ restaurant.image_url }}" class="card-img-top" alt="Restaurant">
                         <div class="card-body">
-                            <h5 class="card-title">Restaurant Name</h5>
-                            <p class="card-text">Short description of the restaurant</p>
-                            <a href="{{ url_for('restaurant_matches', id=1) }}" class="btn btn-primary">View Menu</a>
+                            <h5 class="card-title">{{ restaurant.name }}</h5>
+                            <p class="card-text">{{ restaurant.address }}</p>
+                            <div class="mb-2">
+                                <span class="text-warning">⭐ {{ restaurant.rating|default('0.0') }}/5</span>
+                            </div>
+                            <a href="{{ url_for('restaurant_matches', id=restaurant.id) }}" class="btn btn-primary">View Menu</a>
                         </div>
                     </div>
                 </div>

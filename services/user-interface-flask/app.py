@@ -18,56 +18,68 @@ app.config["SECRET_KEY"] = os.urandom(24)
 # Routes
 @app.route("/")
 def index():
-    # Original authentication code
-    # if "user_uuid" in session:
-    #     return redirect(url_for("food_home"))
-    # return render_template("index.html")
+    if "user_uuid" in session:
+        return redirect(url_for("food_home"))
+    return render_template("index.html")
 
     # Temporary bypass authentication
-    if "user_uuid" not in session:
-        session["user_uuid"] = "dummy-user-123"  # Dummy UUID for testing
+    # if "user_uuid" not in session:
+    #     session["user_uuid"] = "dummy-user-123"  # Dummy UUID for testing
     return redirect(url_for("food_home"))
 
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        # Original authentication code
-        # email = request.form.get("email")
-        # password = request.form.get("password")
-        # try:
-        #     result = APIClient.login(email, password)
-        #     if result.get("uuid"):
-        #         session["user_uuid"] = result["uuid"]
-        #         return redirect(url_for("food_home"))
-        #     flash("Invalid email or password")
-        # except Exception as e:
-        #     flash("Login failed. Please try again.")
+        email = request.form.get("email")
+        password = request.form.get("password")
+        try:
+            result = APIClient.login(email, password)
+            if (
+                result.get("x_user_uid")
+                and result.get("access_token")
+                and result.get("refresh_token")
+            ):
+                session["user_uuid"] = result["x_user_uid"]
+                session["access_token"] = result["access_token"]
+                session["refresh_token"] = result["refresh_token"]
+
+                return redirect(url_for("food_home"))
+            flash("Invalid email or password")
+        except Exception:
+            flash("Login failed. Please try again.")
 
         # Temporary bypass authentication
-        session["user_uuid"] = "dummy-user-123"  # Dummy UUID for testing
-        return redirect(url_for("food_home"))
+        # session["user_uuid"] = "dummy-user-123"  # Dummy UUID for testing
+        # return redirect(url_for("food_home"))
     return render_template("login.html")
 
 
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
     if request.method == "POST":
-        # Original authentication code
-        # email = request.form.get("email")
-        # password = request.form.get("password")
-        # try:
-        #     result = APIClient.signup(email, password)
-        #     if result.get("uuid"):
-        #         session["user_uuid"] = result["uuid"]
-        #         return redirect(url_for("food_home"))
-        #     flash("Registration failed. Please try again.")
-        # except Exception as e:
-        #     flash("Registration failed. Please try again.")
+        email = request.form.get("email")
+        password = request.form.get("password")
+        password2 = request.form.get("confirm-password")
+        try:
+            result = APIClient.signup(email, password, password2)
+            if (
+                result.get("x_user_uid")
+                and result.get("access_token")
+                and result.get("refresh_token")
+            ):
+                session["user_uuid"] = result["x_user_uid"]
+                session["access_token"] = result["access_token"]
+                session["refresh_token"] = result["refresh_token"]
+
+                return redirect(url_for("food_home"))
+            flash("Registration failed. Please try again.")
+        except Exception as e:
+            flash("Registration failed. Please try again.")
 
         # Temporary bypass authentication
-        session["user_uuid"] = "dummy-user-123"  # Dummy UUID for testing
-        return redirect(url_for("food_home"))
+        # session["user_uuid"] = "dummy-user-123"  # Dummy UUID for testing
+        # return redirect(url_for("food_home"))
     return render_template("signup.html")
 
 

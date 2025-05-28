@@ -40,7 +40,8 @@
                         {% for ingredient in recipe.ingredients %}
                         <li class="mb-2">
                             <input type="checkbox" class="form-check-input me-2">
-                            {{ ingredient }}
+                            <strong>{{ ingredient.name }}</strong>
+                            {% if ingredient.description %}<span class="text-muted small"> - {{ ingredient.description }}</span>{% endif %}
                         </li>
                         {% endfor %}
                     </ul>
@@ -51,7 +52,8 @@
                         {% for tool in recipe.tools %}
                         <li class="mb-2">
                             <input type="checkbox" class="form-check-input me-2">
-                            {{ tool }}
+                            <strong>{{ tool.name }}</strong>
+                            {% if tool.description %}<span class="text-muted small"> - {{ tool.description }}</span>{% endif %}
                         </li>
                         {% endfor %}
                     </ul>

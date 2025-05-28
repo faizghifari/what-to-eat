@@ -87,16 +87,14 @@ def signup():
 @login_required
 def food_home():
     try:
-        restaurants = APIClient.get_all_restaurants()
-        recommended_menus = APIClient.get_food_matches()
+        recommended_restaurant_menus = APIClient.get_food_matches()
         return render_template(
             "food_home.html",
-            restaurants=restaurants,
-            recommended_menus=recommended_menus,
+            recommended_restaurant_menus=recommended_restaurant_menus,
         )
     except Exception:  # Use Exception instead of bare except
         flash("Failed to load recommendations")
-        return render_template("food_home.html", restaurants=[], recommended_menus=[])
+        return render_template("food_home.html", recommended_restaurant_menus=[])
 
 
 @app.route("/food/restaurant/<int:id>")

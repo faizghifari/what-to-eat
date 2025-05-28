@@ -33,7 +33,7 @@
                                 <input class="form-check-input" type="checkbox" id="tool-{{ loop.index }}" value="{{ tool.name }}">
                                 <label class="form-check-label" for="tool-{{ loop.index }}">
                                     {{ tool.name }}
-                                    {% if tool.desc %}<span class="text-muted small">- {{ tool.desc }}</span>{% endif %}
+                                    {% if tool.description %}<span class="text-muted small">- {{ tool.description }}</span>{% endif %}
                                 </label>
                             </div>
                             <button class="btn btn-sm btn-outline-danger" type="submit">Remove</button>
@@ -67,7 +67,7 @@
                                 <input class="form-check-input" type="checkbox" id="ingredient-{{ loop.index }}" value="{{ ingredient.name }}">
                                 <label class="form-check-label" for="ingredient-{{ loop.index }}">
                                     {{ ingredient.name }}
-                                    {% if ingredient.desc %}<span class="text-muted small">- {{ ingredient.desc }}</span>{% endif %}
+                                    {% if ingredient.description %}<span class="text-muted small">- {{ ingredient.description }}</span>{% endif %}
                                 </label>
                             </div>
                             <button class="btn btn-sm btn-outline-danger" type="submit">Remove</button>

@@ -44,7 +44,7 @@ struct LoginCredentials {
 ///      - `refresh_token`: String
 #[derive(Serialize, Deserialize)]
 struct LoginOrSignupResponse {
-    x_user_uid: uuid::Uuid,
+    x_user_uuid: uuid::Uuid,
     access_token: String,
     refresh_token: String,
 }
@@ -56,7 +56,7 @@ impl From<LoginOrSignupResponse> for hyper::body::Bytes {
 impl From<Session> for LoginOrSignupResponse {
     fn from(session: Session) -> Self {
         Self {
-            x_user_uid: session.user.id,
+            x_user_uuid: session.user.id,
             access_token: session.access_token,
             refresh_token: session.refresh_token,
         }
@@ -112,25 +112,31 @@ struct SignupCredentials {
 pub async fn sign_up(
     mut request: Request<hyper::body::Incoming>,
     auth_client: Arc<AuthClient>,
-) -> HttpResponse {
+) -> (Option<uuid::Uuid>, HttpResponse) {
     // Read response body
     let body: Result<Vec<u8>, _> = read_body(&mut request).await;
     if let Err(e) = body {
-        return e;
+        return (None, e);
     }
 
     // Deserialise
     let signup_credentials: Result<SignupCredentials, _> = sonic_rs::from_slice(&body.unwrap());
     if signup_credentials.is_err() {
-        return response::<&str>(
-            Some("Malformed signup request body"),
-            StatusCode::BAD_REQUEST,
+        return (
+            None,
+            response::<&str>(
+                Some("Malformed signup request body"),
+                StatusCode::BAD_REQUEST,
+            ),
         );
     }
     let signup_credentials: SignupCredentials = signup_credentials.unwrap();
 
     if signup_credentials.password_1 != signup_credentials.password_2 {
-        return response::<&str>(Some("Passwords do not match"), StatusCode::CONFLICT);
+        return (
+            None,
+            response::<&str>(Some("Passwords do not match"), StatusCode::CONFLICT),
+        );
     }
 
     // Sign up
@@ -142,7 +148,7 @@ pub async fn sign_up(
         )
         .await;
     if let Err(e) = signup_result {
-        return respond_to_auth_error(e);
+        return (None, respond_to_auth_error(e));
     }
 
     // Check sign up response, either return or log-in
@@ -154,14 +160,17 @@ pub async fn sign_up(
                 .await;
 
             if let Err(e) = session {
-                return respond_to_auth_error(e);
+                return (None, respond_to_auth_error(e));
             }
 
             session.unwrap().into()
         }
     };
 
-    response(Some(response_body), StatusCode::OK)
+    (
+        Some(response_body.x_user_uuid),
+        response(Some(response_body), StatusCode::OK),
+    )
 }
 
 /// Locally logs the user out
@@ -169,31 +178,12 @@ pub async fn log_out(
     request: Request<hyper::body::Incoming>,
     auth_client: Arc<AuthClient>,
 ) -> HttpResponse {
-    // Get access token from parameters
-    let parameters: Option<&str> = request.uri().query();
-    if parameters.is_none() {
-        return response(
-            Some(format!("{:}", Reason::InvalidQueryParameters)),
-            StatusCode::BAD_REQUEST,
-        );
+    // Get access token from headers
+    let access_token: Result<&str, _> = get_access_token_from_request(&request);
+    if let Err(reason) = access_token {
+        return response(Some(format!("{reason}")), StatusCode::BAD_REQUEST);
     }
-    let access_token_parameter: Option<&str> = parameters.unwrap().split('&').find_map(|param| {
-        let mut splitter: std::str::Split<'_, char> = param.split('=');
-        if splitter.next().is_some_and(|val| {
-            &val.to_lowercase() == "access_token" || &val.to_lowercase() == "access-token"
-        }) {
-            splitter.next()
-        } else {
-            None
-        }
-    });
-    if access_token_parameter.is_none() {
-        return response(
-            Some(format!("{:}", Reason::InvalidQueryParameters)),
-            StatusCode::BAD_REQUEST,
-        );
-    }
-    let access_token: &str = access_token_parameter.unwrap();
+    let access_token: &str = access_token.unwrap();
 
     // Log out
     let success: Result<(), _> = auth_client
@@ -212,8 +202,7 @@ pub async fn log_out(
 /// Verifies that the user making the request is valid
 /// Expects the following input format:
 /// Headers:
-///      - X-User-Uid: String(uuid)
-/// Query Parameters:
+///      - X-User-Uuid: String(uuid)
 ///      - Access-Token: String(token)
 pub async fn verify(
     request: &Request<hyper::body::Incoming>,
@@ -221,26 +210,7 @@ pub async fn verify(
 ) -> Result<(), Reason> {
     // Get Uuid
     let user_id: uuid::Uuid = get_uuid_from_request(request)?;
-
-    // Get access token from parameters
-    let parameters: Option<&str> = request.uri().query();
-    if parameters.is_none() {
-        return Err(Reason::InvalidQueryParameters);
-    }
-    let access_token_parameter: Option<&str> = parameters.unwrap().split('&').find_map(|param| {
-        let mut splitter: std::str::Split<'_, char> = param.split('=');
-        if splitter.next().is_some_and(|val| {
-            &val.to_lowercase() == "access_token" || &val.to_lowercase() == "access-token"
-        }) {
-            splitter.next()
-        } else {
-            None
-        }
-    });
-    if access_token_parameter.is_none() {
-        return Err(Reason::InvalidQueryParameters);
-    }
-    let access_token: &str = access_token_parameter.unwrap();
+    let access_token: &str = get_access_token_from_request(request)?;
 
     // Get user info from DB
     let user: Result<User, _> = auth_client.get_user(access_token).await;
@@ -253,7 +223,7 @@ pub async fn verify(
 
 /// Get user UID from Query heaaders and convert to Uuid
 fn get_uuid_from_request(request: &Request<hyper::body::Incoming>) -> Result<uuid::Uuid, Reason> {
-    let uuid_header: Option<&HeaderValue> = request.headers().get("X-User-Uid");
+    let uuid_header: Option<&HeaderValue> = request.headers().get("X-User-Uuid");
     if uuid_header.is_none() {
         return Err(Reason::InvalidUserId);
     }
@@ -267,6 +237,18 @@ fn get_uuid_from_request(request: &Request<hyper::body::Incoming>) -> Result<uui
     } else {
         Err(Reason::InvalidUserId)
     }
+}
+
+fn get_access_token_from_request(request: &Request<hyper::body::Incoming>) -> Result<&str, Reason> {
+    let access_token: Option<&HeaderValue> = request.headers().get("Access-Token");
+    if access_token.is_none() {
+        return Err(Reason::InvalidAccessToken);
+    }
+    let access_token: Result<&str, _> = access_token.unwrap().to_str();
+    if access_token.is_err() {
+        return Err(Reason::InvalidAccessToken);
+    }
+    Ok(access_token.unwrap())
 }
 
 /// A utility function to extract the body contents from a request
@@ -295,17 +277,17 @@ fn respond_to_auth_error(e: AuthError) -> HttpResponse {
 }
 
 #[allow(clippy::enum_variant_names)]
+#[derive(Debug)]
 pub enum Reason {
     InvalidCredentials,
     InvalidUserId,
-    InvalidQueryParameters,
+    InvalidAccessToken,
 }
 impl std::fmt::Display for Reason {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Reason::InvalidCredentials => write!(f, "Invalid Credentials"),
-            Reason::InvalidUserId => write!(f, "Invalid Headers"),
-            Reason::InvalidQueryParameters => write!(f, "Invalid Query Parameters"),
+            Reason::InvalidUserId | Reason::InvalidAccessToken => write!(f, "Invalid Headers"),
         }
     }
 }

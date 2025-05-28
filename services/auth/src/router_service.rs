@@ -88,7 +88,19 @@ async fn auth_router(
         request.uri().path().to_owned().as_str(),
     ) {
         (Method::POST, "/auth/login") => auth::login(request, auth_client).await,
-        (Method::POST, "/auth/signup") => auth::sign_up(request, auth_client).await,
+        (Method::POST, "/auth/signup") => match auth::sign_up(request, auth_client).await {
+            (Some(uuid), response) => {
+                let new_profile_req = Request::builder()
+                    .uri("/profile/new")
+                    .method(Method::POST)
+                    .header("X-User-Uuid", uuid.to_string());
+
+                let _ =
+                    request_new_profile_entry(new_profile_req.body(Empty::new()).unwrap()).await;
+                response
+            }
+            (None, response) => response,
+        },
         (Method::POST, "/auth/logout") => auth::log_out(request, auth_client).await,
         (method, path) => router(request, &method, path, auth_client).await,
     }
@@ -171,10 +183,11 @@ async fn forward_to_service(
     }
     let (mut sender, conn): (SendRequest<_>, Connection<_, _>) = handshake_success.unwrap();
 
-    if let Err(e) = conn.await {
-        log::error!("Failed to connect with {uri}. Reason: {e}");
-        return response::<&str>(None, StatusCode::INTERNAL_SERVER_ERROR);
-    }
+    tokio::spawn(async move {
+        if let Err(e) = conn.await {
+            log::error!("Failed to connect with {uri}. Reason: {e}");
+        }
+    });
 
     // Forward request and wait for response
     let incoming_response: Result<_, _> = sender.send_request(request).await;
@@ -243,4 +256,65 @@ pub fn response<T: Into<Bytes>>(message: Option<T>, code: StatusCode) -> HttpRes
             Ok(response)
         }
     }
+}
+
+/// Function to ask the Profile service to create a new profile entry on new user registration
+async fn request_new_profile_entry(request: Request<Empty<Bytes>>) -> HttpResponse {
+    // Get request's intended destination
+    let (url, port): (&str, u16) = ("http://profile-service", 8000);
+
+    // Convert URL into Hyper-compatible URL
+    let uri: hyper::Uri = url
+        .parse::<hyper::Uri>()
+        .expect("This error cannot happen.");
+    let host: Option<&str> = uri.host();
+
+    // This should not be an error, but just in case
+    if host.is_none() {
+        log::error!("Invalid forwarding URL: {url}");
+        return response::<&str>(None, StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    let host: &str = host.unwrap();
+    let address: String = format!("{host}:{port}");
+
+    // Open a TCP connection to destination
+    let stream: Result<TcpStream, _> = TcpStream::connect(address).await;
+    if let Err(e) = stream {
+        log::error!("Failed to connect to {uri}. Reason: {e}");
+        return response::<&str>(None, StatusCode::INTERNAL_SERVER_ERROR);
+    }
+    let io: TokioIo<TcpStream> = TokioIo::new(stream.unwrap());
+
+    // Create HTTP Client
+    let handshake_success: Result<_, _> = handshake::<_, Empty<Bytes>>(io).await;
+    if let Err(e) = handshake_success {
+        log::error!("Failed to establish handshake with {uri}. Reason: {e}");
+        return response::<&str>(None, StatusCode::INTERNAL_SERVER_ERROR);
+    }
+    let (mut sender, conn): (SendRequest<_>, Connection<_, _>) = handshake_success.unwrap();
+
+    tokio::spawn(async move {
+        if let Err(e) = conn.await {
+            log::error!("Failed to connect with {uri}. Reason: {e}");
+        }
+    });
+
+    // Forward request and wait for response
+    let incoming_response: Result<_, _> = sender.send_request(request).await;
+    if let Err(e) = incoming_response {
+        log::error!("Failed to get response from forwarded request. Reason: {e}");
+        return response::<&str>(None, StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    // Translate incoming response to outgoing response
+    let received_response: Response<hyper::body::Incoming> = incoming_response.unwrap();
+    let status: StatusCode = received_response.status();
+    let headers: HeaderMap = received_response.headers().clone();
+    let body: BoxBody<_, _> = received_response.boxed();
+
+    let mut outgoing_response: Response<_> = Response::new(body);
+    *outgoing_response.status_mut() = status;
+    *outgoing_response.headers_mut() = headers;
+    Ok(outgoing_response)
 }

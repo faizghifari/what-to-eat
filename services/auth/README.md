@@ -51,6 +51,7 @@ Any requests should be sent to this service, and it therefore accepts a variety 
 - Query Parameters: `Access-Token`:`TokenStr`
 
 **Responses**
+
 Status Code: `400` (BAD_REQUEST)
 - Meaning: Path or method are invalid
 

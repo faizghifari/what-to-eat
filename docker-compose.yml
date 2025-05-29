@@ -49,11 +49,8 @@ services:
   profile-service:
     build:
       context: ./services/profile
-      dockerfile: Dockerfile
     env_file:
       - ./services/profile/.env
-    volumes:
-      - ./services/eat-together/src:/app/src
     networks:
       - what-to-eat-network
 

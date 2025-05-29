@@ -7,6 +7,7 @@ AUTH_SERVICE_URL = "http://localhost:8000/auth"
 MENU_SERVICE_URL = "http://localhost:8000"
 RECIPE_SERVICE_URL = "http://localhost:8000"
 EAT_TOGETHER_SERVICE_URL = "http://localhost:8000/eat-together"
+PROFILE_SERVICE_URL = "http://localhost:8000/profile"
 
 
 class APIError(Exception):
@@ -372,3 +373,160 @@ class APIClient:
         except requests.RequestException:
             flash("Failed to search for user")
             return []
+
+        # Profile Service
+
+    @classmethod
+    def get_profile(cls):
+        try:
+            response = requests.get(
+                f"{PROFILE_SERVICE_URL}/profile", headers=cls.get_headers()
+            )
+            return cls.handle_response(response)
+        except requests.RequestException:
+            flash("Connection error. Please try again later")
+            raise APIError("Connection error")
+
+    @classmethod
+    def get_preferences(cls):
+        try:
+            response = requests.get(
+                f"{PROFILE_SERVICE_URL}/preferences", headers=cls.get_headers()
+            )
+            return cls.handle_response(response)
+        except requests.RequestException:
+            flash("Connection error. Please try again later")
+            raise APIError("Connection error")
+
+    @classmethod
+    def get_restrictions(cls):
+        try:
+            response = requests.get(
+                f"{PROFILE_SERVICE_URL}/restrictions", headers=cls.get_headers()
+            )
+            return cls.handle_response(response)
+        except requests.RequestException:
+            flash("Connection error. Please try again later")
+            raise APIError("Connection error")
+
+    @classmethod
+    def get_ingredients(cls):
+        try:
+            response = requests.get(
+                f"{PROFILE_SERVICE_URL}/ingredients", headers=cls.get_headers()
+            )
+            return cls.handle_response(response)
+        except requests.RequestException:
+            flash("Connection error. Please try again later")
+            raise APIError("Connection error")
+
+    @classmethod
+    def get_tools(cls):
+        try:
+            response = requests.get(
+                f"{PROFILE_SERVICE_URL}/tools", headers=cls.get_headers()
+            )
+            return cls.handle_response(response)
+        except requests.RequestException:
+            flash("Connection error. Please try again later")
+            raise APIError("Connection error")
+
+    @classmethod
+    def get_location(cls):
+        try:
+            response = requests.get(
+                f"{PROFILE_SERVICE_URL}/location", headers=cls.get_headers()
+            )
+            return cls.handle_response(response)
+        except requests.RequestException:
+            flash("Connection error. Please try again later")
+            raise APIError("Connection error")
+
+    @classmethod
+    def edit_profile(cls, profile_data):
+        try:
+            response = requests.put(
+                f"{PROFILE_SERVICE_URL}/profile",
+                headers=cls.get_headers(),
+                json=profile_data,
+            )
+            return cls.handle_response(response)
+        except requests.RequestException:
+            flash("Connection error. Please try again later")
+            raise APIError("Connection error")
+
+    @classmethod
+    def update_preferences(cls, preferences):
+        try:
+            response = requests.put(
+                f"{PROFILE_SERVICE_URL}/preferences",
+                headers=cls.get_headers(),
+                json={"dietary_preferences": preferences},
+            )
+            return cls.handle_response(response)
+        except requests.RequestException:
+            flash("Connection error. Please try again later")
+            raise APIError("Connection error")
+
+    @classmethod
+    def update_restrictions(cls, restrictions):
+        try:
+            response = requests.put(
+                f"{PROFILE_SERVICE_URL}/restrictions",
+                headers=cls.get_headers(),
+                json={"dietary_restrictions": restrictions},
+            )
+            return cls.handle_response(response)
+        except requests.RequestException:
+            flash("Connection error. Please try again later")
+            raise APIError("Connection error")
+
+    @classmethod
+    def update_tools(cls, tools):
+        try:
+            response = requests.put(
+                f"{PROFILE_SERVICE_URL}/tools",
+                headers=cls.get_headers(),
+                json={"available_tools": tools},
+            )
+            return cls.handle_response(response)
+        except requests.RequestException:
+            flash("Connection error. Please try again later")
+            raise APIError("Connection error")
+
+    @classmethod
+    def update_ingredients(cls, ingredients):
+        try:
+            response = requests.put(
+                f"{PROFILE_SERVICE_URL}/ingredients",
+                headers=cls.get_headers(),
+                json={"available_ingredients": ingredients},
+            )
+            return cls.handle_response(response)
+        except requests.RequestException:
+            flash("Connection error. Please try again later")
+            raise APIError("Connection error")
+
+    @classmethod
+    def update_location(cls, location):
+        try:
+            response = requests.put(
+                f"{PROFILE_SERVICE_URL}/location",
+                headers=cls.get_headers(),
+                json={"current_location": location},
+            )
+            return cls.handle_response(response)
+        except requests.RequestException:
+            flash("Connection error. Please try again later")
+            raise APIError("Connection error")
+
+    @classmethod
+    def create_new_profile(cls):
+        try:
+            response = requests.post(
+                f"{PROFILE_SERVICE_URL}/new", headers=cls.get_headers()
+            )
+            return cls.handle_response(response)
+        except requests.RequestException:
+            flash("Connection error. Please try again later")
+            raise APIError("Connection error")

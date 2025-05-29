@@ -62,6 +62,9 @@ class APIClient:
 
             return data
         except ValueError:
+            if response.ok:
+                return {}
+
             flash("Invalid response from server")
             raise APIError("Invalid response")
         except Exception as e:
@@ -374,8 +377,7 @@ class APIClient:
             flash("Failed to search for user")
             return []
 
-        # Profile Service
-
+    # Profile Service
     @classmethod
     def get_profile(cls):
         try:

@@ -179,10 +179,30 @@ def tools_ingredients():
     return render_template("tools_ingredients.html")
 
 
-@app.route("/preferences-restrictions")
+@app.route("/preferences-restrictions", methods=["GET", "POST"])
 @login_required
 def preferences_restrictions():
-    return render_template("preferences.html")
+    if request.method == "POST":
+        try:
+            data = request.get_json()
+            if "preferences" in data:
+                APIClient.update_preferences(data["preferences"])
+            if "restrictions" in data:
+                APIClient.update_restrictions(data["restrictions"])
+            return jsonify({"success": True})
+        except Exception as e:
+            return jsonify({"error": str(e)}), 400
+
+    try:
+        profile = APIClient.get_profile()
+        return render_template(
+            "preferences.html",
+            preferences=profile.get("dietary_preferences", []),
+            restrictions=profile.get("dietary_restrictions", []),
+        )
+    except Exception:
+        flash("Failed to load preferences")
+        return redirect(url_for("food_home"))
 
 
 @app.route("/eat-together")

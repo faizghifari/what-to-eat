@@ -1,0 +1,178 @@
+@startuml
+' =========================
+' Supabase DB Tables (with methods)
+' =========================
+
+class User {
+  id: uuid
+  email: string
+  encrypted_password: string
+  role: string
+  created_at: datetime
+  --
+  + register()
+  + login()
+  + logout()
+  + updateProfile()
+  + getProfile()
+}
+
+class Profile {
+  id: int
+  dietary_preferences: json
+  dietary_restrictions: json
+  available_tools: json
+  available_ingredients: json
+  current_location: int
+  user: uuid
+  created_at: datetime
+  --
+  + updatePreferences()
+  + updateRestrictions()
+  + updateTools()
+  + updateIngredients()
+  + updateLocation()
+  + getProfile()
+}
+
+class Location {
+  id: int
+  latitude: float
+  longitude: float
+  inside_kaist: bool
+  --
+  + getLocation()
+}
+
+class Restaurant {
+  id: int
+  name: string
+  address: string
+  telephone: string
+  image_url: string
+  location: int
+  created_at: datetime
+  --
+  + createRestaurant()
+  + getDetails()
+  + getMenus()
+  + deleteRestaurant()
+}
+
+class Menu {
+  id: int
+  name: string
+  description: string
+  main_ingredients: json
+  price: numeric
+  image_url: string
+  restaurant: int
+  created_at: datetime
+  --
+  + createMenu()
+  + getDetails()
+  + getRating()
+  + getComments()
+  + deleteMenu()
+  + rateMenu()
+}
+
+class Rating {
+  id: int
+  menu: int
+  recipe: int
+  rating_value: int
+  comment_text: string
+  user: uuid
+  created_at: datetime
+  --
+  + createRating()
+  + updateRating()
+  + deleteRating()
+  + getRatingsByMenu()
+  + getRatingsByRecipe()
+}
+
+class Recipe {
+  id: int
+  name: string
+  description: string
+  ingredients: json
+  tools: json
+  instructions: json
+  estimated_price: numeric
+  estimated_time: string
+  image_url: string
+  created_at: datetime
+  --
+  + createRecipe()
+  + updateRecipe()
+  + deleteRecipe()
+  + getDetails()
+  + getRating()
+  + getComments()
+  + rateRecipe()
+}
+
+class EatTogetherGroup {
+  id: int
+  group_name: string
+  guest_preferences: json
+  guest_restrictions: json
+  leader: uuid
+  group_code: string
+  created_at: datetime
+  --
+  + createGroup()
+  + addUser()
+  + removeUser()
+  + getRecommendations()
+  + selectRestaurant()
+  + updateGuestPreferences()
+  + updateGuestRestrictions()
+  + deleteGroup()
+}
+
+class UserGroup {
+  id: int
+  group: int
+  user: uuid
+  joined_at: datetime
+  --
+  + joinGroup()
+  + leaveGroup()
+}
+
+class RecipeCache {
+  cache_key: string
+  payload: json
+  fetched_at: datetime
+  expires_at: datetime
+  --
+  + getCache()
+  + setCache()
+  + deleteCache()
+}
+
+' =========================
+' Relationships (DB)
+' =========================
+
+User "1" -- "0..*" Profile : has
+User "1" -- "0..*" Rating : rates
+User "1" -- "0..*" EatTogetherGroup : leads
+User "1" -- "0..*" UserGroup : joins
+
+Profile "1" -- "1" Location : current_location
+
+Restaurant "1" -- "0..*" Menu : offers
+Restaurant "1" -- "1" Location : at
+
+Menu "1" -- "0..*" Rating : receives
+Menu "1" -- "0..*" RecipeCache : cached_by
+
+Recipe "1" -- "0..*" Rating : receives
+
+EatTogetherGroup "1" -- "0..*" UserGroup : has_member
+
+@enduml

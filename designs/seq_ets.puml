@@ -1,0 +1,41 @@
+@startuml
+actor User
+participant "User Interface" as UI
+participant "Auth Service" as AuthService
+participant "Eat Together Service" as ETService
+database "Database" as DB
+
+User -> UI : Request Eat Together Recommendations (groupId)
+activate UI
+UI -> AuthService : Request with authentication token
+activate AuthService
+AuthService -> DB : Authenticate token?
+activate DB
+DB --> AuthService : Authentication result (Valid/Invalid)
+deactivate DB
+alt Authenticated (or no auth needed)
+    AuthService -> ETService : Forward request (GET /eat-together/{group_id}/food-matches)
+    activate ETService
+    ETService -> DB : Get Group Details (group_id)
+    activate DB
+    DB --> ETService : Group Details
+    deactivate DB
+    ETService -> DB : Get User Preferences (group_id)
+    activate DB
+    DB --> ETService : User Preferences
+    deactivate DB
+    ETService -> DB : Get Restaurants with Matching Menus (preferences, restrictions)
+    activate DB
+    DB --> ETService : Restaurant Recommendations
+    deactivate DB
+    ETService --> UI : RestaurantMenuResponse[]
+    deactivate ETService
+    UI -> UI : Filter & Sort Recommendations
+    UI --> User : Restaurant Recommendations
+else Not Authenticated
+    AuthService --> UI : Authentication Rejected
+    UI --> User : Authentication Rejected
+end
+deactivate AuthService
+deactivate UI
+@enduml

@@ -1,0 +1,36 @@
+@startuml
+skinparam componentStyle uml2
+
+title Menu Auto-Update Service - Component Diagram
+
+package "Menu Auto-Update Service" {
+  component [Cron Job Scheduler] as CronScheduler
+  component [Menu Scraper] as MenuScraper
+  component [Supabase Client] as SupabaseClient
+  component [Menu Data Model] as MenuData
+  component [Google GenAI Client] as GenAIClient
+  component [Scraper Configuration] as ScraperConfig
+}
+
+package "Google GenAI Service" {
+    component [LLM Service] as LLMService
+}
+
+package "KAIST Website" as KAISTWebsite {
+}
+
+database "Supabase DB" {
+  component "Menu Table"
+  component "Restaurant Table"
+}
+
+CronScheduler -- MenuScraper : Triggers
+MenuScraper -- KAISTWebsite : Scrapes Data
+MenuScraper -- GenAIClient : Uses (for refining menu data)
+MenuScraper -- SupabaseClient : Uses
+SupabaseClient -- "Menu Table" : Reads/Writes
+SupabaseClient -- "Restaurant Table" : Reads
+GenAIClient -- LLMService : Uses
+MenuScraper -- ScraperConfig : Reads Configuration
+
+@enduml

@@ -1,0 +1,58 @@
+@startuml
+actor User
+participant "Web Interface" as UI
+participant "Auth Service" as AuthService
+participant "Recipe Service" as RecipeService
+database "Database" as DB
+entity "Google GenAI" as GenAI
+
+User -> UI : Request Recipe Recommendations
+activate UI
+UI -> AuthService : Request with authentication token
+activate AuthService
+AuthService -> DB : Authenticate token?
+activate DB
+DB --> AuthService : Authentication result (Valid/Invalid)
+deactivate DB
+alt Authenticated (or no auth needed)
+    AuthService -> RecipeService : Forward request (GET /recipe/matches)
+    activate RecipeService
+    RecipeService -> DB : Get Recipes
+    activate DB
+    DB --> RecipeService : Recipe Data
+    deactivate DB
+    RecipeService --> UI : Recipe Recommendations
+    deactivate RecipeService
+    UI -> UI : Filter & Sort Recipes
+    UI --> User : Recipe Recommendations
+else Not Authenticated
+    AuthService --> UI : Authentication Rejected
+    UI --> User : Authentication Rejected
+end
+deactivate AuthService
+deactivate UI
+
+alt No Recipes Found
+    UI -> User : Prompt for Web Search
+    User -> UI : Agrees to Web Search
+    UI -> AuthService : Request to search web with authentication token
+    activate AuthService
+    AuthService -> RecipeService : Forward request to search web (GET /recipe/matches_web)
+    activate RecipeService
+    RecipeService -> GenAI : Search Recipes
+    activate GenAI
+    GenAI --> RecipeService : Web Recipe Results
+    deactivate GenAI
+    RecipeService -> DB : Store Web Recipe Results
+    activate DB
+    DB --> RecipeService : Recipe Results Stored
+    deactivate DB
+    RecipeService --> UI : Recipe Recommendations
+    deactivate RecipeService
+    UI -> UI : Filter & Sort Recipes
+    UI --> User : Recipe Recommendations
+    deactivate AuthService
+else User Declines Web Search
+    UI --> User : No Recipes Found
+end
+@enduml

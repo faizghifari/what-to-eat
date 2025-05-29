@@ -1,0 +1,68 @@
+@startuml
+participant Client
+participant "User Interface" as UI
+participant "Auth Service" as AuthService
+database "Supabase DB" as SupabaseDB
+participant "Profile Service" as ProfileService
+
+Client -> UI: User Clicks "Edit Preferences" (or any other edit action)
+activate UI
+
+UI -> AuthService: Request with authentication token
+activate AuthService
+
+AuthService -> SupabaseDB: Authenticate token?
+activate SupabaseDB
+SupabaseDB --> AuthService: Authentication result (Valid/Invalid)
+deactivate SupabaseDB
+
+alt Authenticated (or no auth needed)
+    AuthService -> ProfileService: Forward request (e.g., GET /profile/preferences)
+    activate ProfileService
+    ProfileService -> ProfileService: get_preferences(request: Request)
+    activate ProfileService
+    ProfileService -> SupabaseDB: Retrieve profile data
+    activate SupabaseDB
+    SupabaseDB --> ProfileService: Profile data
+    deactivate SupabaseDB
+    ProfileService --> AuthService: Profile data
+    deactivate ProfileService
+    AuthService --> UI: Profile data
+else Not Authenticated
+    AuthService --> UI: Authentication Rejected
+end
+deactivate AuthService
+
+UI --> Client: Display "Edit Preferences" screen (or error if rejected)
+deactivate UI
+
+Client -> UI: User Clicks "Save Changes"
+activate UI
+UI -> AuthService: Save request with authentication token
+activate AuthService
+AuthService -> SupabaseDB: Authenticate token?
+activate SupabaseDB
+SupabaseDB --> AuthService: Authentication result (Valid/Invalid)
+deactivate SupabaseDB
+
+alt Authenticated (or no auth needed)
+    AuthService -> ProfileService: Forward save request (e.g., PUT /profile/preferences)
+    activate ProfileService
+    ProfileService -> ProfileService: edit_profile(request: Request)
+    activate ProfileService
+    ProfileService -> SupabaseDB: Save updated profile data
+    activate SupabaseDB
+    SupabaseDB --> ProfileService: Save Confirmation
+    deactivate SupabaseDB
+    ProfileService --> AuthService: Save Confirmation
+    deactivate ProfileService
+    AuthService --> UI: Save Confirmation
+else Not Authenticated
+    AuthService --> UI: Authentication Rejected
+end
+deactivate AuthService
+
+UI --> Client: Display "Changes Saved" or "Changes Cancelled" (or error if rejected)
+deactivate UI
+
+@enduml

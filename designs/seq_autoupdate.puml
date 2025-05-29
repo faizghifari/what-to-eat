@@ -1,0 +1,28 @@
+@startuml
+actor "Time Event" as TE
+participant "Menu Auto Update Service" as Scraper
+database "Supabase DB" as DB
+entity "KAIST Website" as KAIST
+entity "Google GenAI" as GenAI
+
+TE -> Scraper : Trigger Daily Menu Retrieval
+activate Scraper
+Scraper -> KAIST : Get Daily KAIST Cafeteria Menus
+activate KAIST
+KAIST -->> Scraper : HTML Menu Data
+deactivate KAIST
+Scraper -> Scraper : Extract Menus
+Scraper -> GenAI : Refine Menu Names/Descriptions
+activate GenAI
+GenAI -->> Scraper : Refined Menu Data
+deactivate GenAI
+Scraper -> DB : Delete Yesterday's Menus
+activate DB
+DB -->> Scraper : Acknowledgment
+deactivate DB
+Scraper -> DB : Insert Today's Menus
+activate DB
+DB -->> Scraper : Acknowledgment
+deactivate DB
+deactivate Scraper
+@enduml

@@ -6,4 +6,4 @@ RUN pip install --no-cache-dir python-dotenv supabase "fastapi[standard]"
 
 COPY src ./
 
-CMD ["fastapi", "run", "./profile.py", "--host", "0.0.0.0", "--port", "5000"]
+CMD ["fastapi", "run", "./profile.py", "--host", "0.0.0.0", "--port", "8000"]

@@ -84,7 +84,7 @@ Status Code: `200` (OK)
 - Body:
   ```
   JSON{
-    x_user_uid: String | Uuid,
+    x_user_uuid: String | Uuid,
     access_token: String,
     refresh_token: String,
   }
@@ -127,7 +127,7 @@ Status Code: `200` (OK)
 - Body:
   ```
   JSON{
-    x_user_uid: String | Uuid,
+    x_user_uuid: String | Uuid,
     access_token: String,
     refresh_token: String,
   }
@@ -161,7 +161,7 @@ Status Code: `200` (OK)
 - Body:
   ```
   JSON{
-    x_user_uid: String | Uuid,
+    x_user_uuid: String | Uuid,
     access_token: String,
     refresh_token: String,
   }

@@ -395,7 +395,7 @@ def list_restaurant_menus(x_user_uuid: Annotated[str, Header()], restaurant_id: 
     return RestaurantMenuResponse(
         restaurant=Restaurant(**restaurant),
         menus=menu_responses,
-        distance=calculate_distance(user_current_location, restaurant_location),
+        distance=int(calculate_distance(user_current_location, restaurant_location)),
     )
 
 

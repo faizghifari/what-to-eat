@@ -473,10 +473,6 @@ def get_food_matches(x_user_uuid: Annotated[str, Header()], group_id: int):
 
     group = group[0]
 
-    # Check if the user is the group leader
-    if x_user_uuid != group["leader"]:
-        raise HTTPException(status_code=403, detail="User is not the group leader")
-
     # Get all group members
     members = (
         supabase.table("UserGroup").select("*").eq("group", group_id).execute().data

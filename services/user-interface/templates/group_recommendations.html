@@ -28,56 +28,16 @@
     </div>
 
     <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card">
-                <div class="card-body">
-                    <h4 class="card-title mb-4">Filters</h4>
-                    
-                    <div class="mb-4">
-                        <h6>Price Range</h6>
-                        <div class="btn-group w-100">
-                            <input type="checkbox" class="btn-check" id="price1" autocomplete="off">
-                            <label class="btn btn-outline-primary" for="price1">$</label>
-                            <input type="checkbox" class="btn-check" id="price2" autocomplete="off">
-                            <label class="btn btn-outline-primary" for="price2">$$</label>
-                            <input type="checkbox" class="btn-check" id="price3" autocomplete="off">
-                            <label class="btn btn-outline-primary" for="price3">$$$</label>
-                        </div>
-                    </div>
-
-                    <div class="mb-4">
-                        <h6>Distance</h6>
-                        <select class="form-select">
-                            <option>Any distance</option>
-                            <option>Within 1 km</option>
-                            <option>Within 3 km</option>
-                            <option>Within 5 km</option>
-                        </select>
-                    </div>
-
-                    <div class="mb-4">
-                        <h6>Sort By</h6>
-                        <select class="form-select">
-                            <option>Best Match</option>
-                            <option>Rating</option>
-                            <option>Distance</option>
-                            <option>Price</option>
-                        </select>
-                    </div>
-
-                    <div class="d-grid">
-                        <button class="btn btn-primary">Apply Filters</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <div class="col-md-9">
             <div class="row">
                 {% for restaurant_menu in matches %}
                 <div class="col-md-6 mb-4">
                     <div class="card">
-                        <img src="{{ restaurant_menu.restaurant.image_url}}" class="card-img-top" alt="Restaurant">
+                        {% if restaurant_menu.restaurant.image_url %}
+                            <img src="{{ restaurant_menu.restaurant.image_url }}" class="card-img-top" alt="Restaurant">
+                        {% else %}
+                            <img src="https://nqcljipafsfatnooppij.supabase.co/storage/v1/object/public/media/restaurant/faculty%20cafeteria.jpg" class="card-img-top" alt="Restaurant">
+                        {% endif %}
                         <div class="card-body">
                             <h5 class="card-title">{{ restaurant_menu.restaurant.name }}</h5>
                             <p class="card-text">{{ restaurant_menu.restaurant.address }}</p>
@@ -87,7 +47,7 @@
                         </div>
                         <div class="card-footer bg-white">
                             <div class="d-flex justify-content-between align-items-center">
-                                <a href="{{ url_for('restaurant_detail', id=restaurant.id) }}" class="btn btn-primary">View Menu</a>
+                                <a href="{{ url_for('restaurant_detail', id=restaurant_menu.restaurant.id) }}" class="btn btn-primary">View Menu</a>
                             </div>
                         </div>
                     </div>
@@ -117,7 +77,6 @@
                 <p class="text-muted">The selected restaurant will match your group's preferences</p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-primary">Spin Again</button>
             </div>
         </div>
@@ -164,7 +123,7 @@ document.addEventListener('DOMContentLoaded', function() {
             details.innerHTML = `
                 <p>${selectedRestaurant.restaurant.address}</p>
                 <p class="text-success">${selectedRestaurant.menus.length} matching items</p>
-                <a href="/restaurant/${selectedRestaurant.restaurant.id}" class="btn btn-primary mt-2">View Details</a>
+                <a href="/food/restaurant/${selectedRestaurant.restaurant.id}" class="btn btn-primary mt-2">View Details</a>
             `;
             resultText.parentNode.insertBefore(details, resultText.nextSibling);
         }, 2000);

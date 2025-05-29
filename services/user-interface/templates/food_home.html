@@ -15,10 +15,26 @@
         <div class="col">
             <h3>Recommended Restaurants</h3>
             <div class="row">
+                {% if not recommended_restaurant_menus %}
+                <div class="col-12 text-center py-5">
+                    <div class="alert alert-info" role="alert">
+                        <h4 class="alert-heading">No Recommendations Yet!</h4>
+                        <p>To get personalized restaurant recommendations, please add your dietary preferences and restrictions first.</p>
+                        <hr>
+                        <p class="mb-0">
+                            <a href="{{ url_for('preferences_restrictions') }}" class="btn btn-primary">Set Up Preferences</a>
+                        </p>
+                    </div>
+                </div>
+                {% else %}
                 {% for restaurant_menu in recommended_restaurant_menus %}
                 <div class="col-md-3">
                     <div class="card food-card">
-                        <img src="{{ restaurant_menu.restaurant.image_url }}" class="card-img-top" alt="Restaurant">
+                        {% if restaurant_menu.restaurant.image_url %}
+                            <img src="{{ restaurant_menu.restaurant.image_url }}" class="card-img-top" alt="Restaurant">
+                        {% else %}
+                            <img src="https://nqcljipafsfatnooppij.supabase.co/storage/v1/object/public/media/restaurant/faculty%20cafeteria.jpg" class="card-img-top" alt="Restaurant">
+                        {% endif %}
                         <div class="card-body">
                             <h5 class="card-title">{{ restaurant_menu.restaurant.name }}</h5>
                             <p class="card-text">{{ restaurant_menu.restaurant.address }}</p>
@@ -31,6 +47,7 @@
                     </div>
                 </div>
                 {% endfor %}
+                {% endif %}
             </div>
         </div>
     </div>
@@ -39,11 +56,22 @@
         <div class="col">
             <h3>Recommended Menus</h3>
             <div class="row">
+            {% if not recommended_restaurant_menus %}
+                <div class="col-12 text-center py-5">
+                    <div class="alert alert-info" role="alert">
+                        <p>Menu recommendations will appear here after you set up your preferences.</p>
+                    </div>
+                </div>
+            {% else %}
                 {% for restaurant in recommended_restaurant_menus %}
                     {% for menu in restaurant.menus %}
                     <div class="col-md-3">
                         <div class="card food-card">
-                            <img src="{{ menu.image_url }}" class="card-img-top" alt="Menu">
+                            {% if menu.image_url %}
+                                <img src="{{ menu.image_url }}" class="card-img-top" alt="Menu">
+                            {% else %}
+                                <img src="https://nqcljipafsfatnooppij.supabase.co/storage/v1/object/public/media/menu/amercian%20breakfast%20set.jpg" class="card-img-top" alt="Menu">
+                            {% endif %}
                             <div class="card-body">
                                 <h5 class="card-title">{{ menu.name }}</h5>
                                 <p class="text-muted">{{ restaurant.restaurant.name }}</p>
@@ -54,6 +82,7 @@
                     </div>
                     {% endfor %}
                 {% endfor %}
+            {% endif %}
             </div>
         </div>
     </div>

@@ -78,11 +78,11 @@ def signup():
         try:
             result = APIClient.signup(email, password, password2)
             if (
-                result.get("x_user_uid")
+                result.get("x_user_uuid")
                 and result.get("access_token")
                 and result.get("refresh_token")
             ):
-                session["user_uuid"] = result["x_user_uid"]
+                session["user_uuid"] = result["x_user_uuid"]
                 session["access_token"] = result["access_token"]
                 session["refresh_token"] = result["refresh_token"]
 
@@ -124,8 +124,8 @@ def restaurant_detail(id):
             "restaurant_detail.html",
             restaurant_menu_info=restaurant_menu_info,
         )
-    except Exception:
-        flash("Failed to load restaurant information")
+    except Exception as e:
+        flash(f"Failed to load restaurant information: {str(e)}")
         return redirect(url_for("food_home"))
 
 
@@ -220,8 +220,8 @@ def group_recommendations(id):
     try:
         matches = APIClient.get_group_food_matches(id)
         return render_template("group_recommendations.html", matches=matches)
-    except Exception:
-        flash("Failed to load recommendations")
+    except Exception as e:
+        flash(f"Failed to load recommendations: {str(e)}")
         return redirect(url_for("eat_together"))
 
 

@@ -1,0 +1,38 @@
+@startuml
+skinparam componentStyle uml2
+
+title Recipe Service - Component Diagram
+
+package "Recipe Service" {
+  component [FastAPI Server] as RecipeServer
+  component [Supabase Client] as SupabaseClient
+  component [Recipe Data Model] as RecipeData
+  component [Google GenAI Client] as GenAIClient
+}
+
+package "Authentication Service" {
+    component [Auth Server]
+    interface AuthService
+}
+
+package "Google GenAI Service" {
+    component [LLM Service] as LLMService
+}
+
+database "Supabase DB" {
+  component "Recipe Table"
+  component "Ingredient Table"
+  component "Tool Table"
+  component "Rating Table"
+}
+
+RecipeServer -- SupabaseClient : Uses
+RecipeServer -- GenAIClient : Uses (for web search)
+SupabaseClient -- "Recipe Table" : Reads/Writes
+SupabaseClient -- "Ingredient Table" : Reads
+SupabaseClient -- "Tool Table" : Reads
+SupabaseClient -- "Rating Table" : Reads/Writes
+RecipeServer -- AuthService : Requires Authentication
+GenAIClient -- LLMService : Uses
+
+@enduml

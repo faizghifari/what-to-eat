@@ -1,0 +1,37 @@
+@startuml
+actor User
+participant "User Interface" as UI
+participant "Auth Service" as AuthService
+participant "Menu Service" as MenuService
+database "Supabase DB" as SupabaseDB
+
+User -> UI : Request Menu Recommendations (filter, sort)
+activate UI
+UI -> AuthService : Request with authentication token
+activate AuthService
+AuthService -> SupabaseDB : Authenticate token?
+activate SupabaseDB
+SupabaseDB --> AuthService : Authentication result (Valid/Invalid)
+deactivate SupabaseDB
+alt Authenticated (or no auth needed)
+    AuthService -> MenuService : Forward request (GET /restaurant/matches)
+    activate MenuService
+    MenuService -> SupabaseDB : Get user profile (x_user_uuid)
+    activate SupabaseDB
+    SupabaseDB --> MenuService : User profile data
+    deactivate SupabaseDB
+    MenuService -> SupabaseDB : Get Menus
+    activate SupabaseDB
+    SupabaseDB --> MenuService : Menu Data
+    deactivate SupabaseDB
+    MenuService --> UI : RestaurantMenuResponse[]
+    deactivate MenuService
+    UI -> UI : Filter & Sort Menus
+    UI --> User : Display Menu Recommendations
+else Not Authenticated
+    AuthService --> UI : Authentication Rejected
+    UI --> User : Authentication Rejected
+end
+deactivate AuthService
+deactivate UI
+@enduml

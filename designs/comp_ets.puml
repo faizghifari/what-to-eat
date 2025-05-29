@@ -1,0 +1,37 @@
+@startuml
+skinparam componentStyle uml2
+
+title Eat-Together Service - Component Diagram
+
+package "Eat-Together Service" {
+  component [FastAPI Server] as EatTogetherServer
+  component [Supabase Client] as SupabaseClient
+  component [Eat-Together Data Model] as EatTogetherData
+}
+
+package "Authentication Service" {
+    component [Auth Server]
+    interface AuthService
+}
+
+database "Supabase DB" {
+  component "EatTogetherGroup Table"
+  component "UserGroup Table"
+  component "Profile Table"
+  component "Restaurant Table"
+  component "Menu Table"
+  component "Location Table"
+  component "Rating Table"
+}
+
+EatTogetherServer -- SupabaseClient : Uses
+SupabaseClient -- "EatTogetherGroup Table" : Reads/Writes
+SupabaseClient -- "UserGroup Table" : Reads/Writes
+SupabaseClient -- "Profile Table" : Reads (User Preferences/Restrictions)
+SupabaseClient -- "Restaurant Table" : Reads
+SupabaseClient -- "Menu Table" : Reads
+SupabaseClient -- "Location Table" : Reads
+SupabaseClient -- "Rating Table" : Reads
+EatTogetherServer -- AuthService : Requires Authentication
+
+@enduml

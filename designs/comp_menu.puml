@@ -1,0 +1,31 @@
+@startuml
+skinparam componentStyle uml2
+
+title Menu Service - Component Diagram
+
+package "Menu Service" {
+  component [FastAPI Server] as MenuServer
+  component [Supabase Client] as SupabaseClient
+  component [Menu Data Model] as MenuData
+}
+
+package "Authentication Service" {
+    component [Auth Server]
+    interface AuthService
+}
+
+database "Supabase DB" {
+  component "Menu Table"
+  component "Restaurant Table"
+  component "Location Table"
+  component "Rating Table"
+}
+
+MenuServer -- SupabaseClient : Uses
+SupabaseClient -- "Menu Table" : Reads/Writes
+SupabaseClient -- "Restaurant Table" : Reads
+SupabaseClient -- "Location Table" : Reads
+SupabaseClient -- "Rating Table" : Reads/Writes
+MenuServer -- AuthService : Requires Authentication
+
+@enduml

@@ -1,0 +1,27 @@
+@startuml
+skinparam componentStyle uml2
+
+title Profile Service - Component Diagram
+
+package "Profile Service" {
+  component [FastAPI Server] as ProfileServer
+  component [Supabase Client] as SupabaseClient
+  component [Profile Data Model] as ProfileData
+}
+
+package "Authentication Service" {
+    component [Auth Server]
+    interface AuthService
+}
+
+database "Supabase DB" {
+  component "Profile Table"
+  component "Location Table"
+}
+
+ProfileServer -- SupabaseClient : Uses
+SupabaseClient -- "Profile Table" : Reads/Writes
+SupabaseClient -- "Location Table" : Reads/Writes
+ProfileServer -- AuthService : Requires Authentication
+
+@enduml

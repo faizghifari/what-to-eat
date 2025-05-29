@@ -1,0 +1,98 @@
+@startuml
+!pragma layout GAV
+
+' Define custom stereotypes for better visual representation
+skinparam Cloud {
+  BorderColor #LightBlue
+  BackgroundColor #AliceBlue
+}
+skinparam Node {
+  BorderColor #Grey
+  BackgroundColor #LightGrey
+}
+skinparam Rectangle {
+  BorderColor #DarkGreen
+  BackgroundColor #LightGreen
+  StereotypeFontSize 10
+}
+skinparam Arrow {
+  Thickness 2
+  Color #555555
+}
+skinparam Note {
+  BackgroundColor #LightYellow
+  BorderColor #DarkGoldenRod
+}
+
+' Client (External Actor)
+actor "Client" as CLIENT
+
+' External Services (Clouds)
+cloud "Supabase DB" as SUPABASE <<External DB>>
+cloud "Google GenAI LLM" as GENAI <<AI Service>>
+cloud "KAIST Cafeteria Menu Website" as KAIST_WEBSITE <<External Website>>
+cloud "GPS Location Service" as GPS_SERVICE <<External Service>>
+
+' Docker Host (Node)
+node "Docker Host" {
+    rectangle "auth-service" as AUTH <<Docker Container>>
+    rectangle "ui-service" as UI <<Docker Container>>
+    rectangle "menu-service" as MENU <<Docker Container>>
+    rectangle "recipe-service" as RECIPE <<Docker Container>>
+    rectangle "profile-service" as PROFILE <<Docker Container>>
+    rectangle "ets-service" as ETS <<Docker Container>>
+    rectangle "menu-auto_update-service" as MENU_AUTO_UPDATE <<Docker Container>>
+}
+
+' Client Access to UI (Representing External Exposure - Green)
+CLIENT -[#green,thickness=2]-> UI : External Access
+
+' UI to External GPS (Blue)
+UI -[#blue,thickness=2]-> GPS_SERVICE : Location Data
+
+' UI to Auth Service (Internal API Calls - Blue)
+UI -[#blue,thickness=2]-> AUTH : API Calls
+
+' Auth Service as API Gateway/Forwarder (Black)
+AUTH --> MENU
+AUTH --> RECIPE
+AUTH --> PROFILE
+AUTH --> ETS
+AUTH --> MENU_AUTO_UPDATE
+
+' Authentication Flow (Red)
+AUTH -[#red,thickness=2]-> SUPABASE : Auth
+
+' All Backend Services to Supabase DB (DarkRed)
+MENU -[#darkred]-> SUPABASE
+RECIPE -[#darkred]-> SUPABASE
+PROFILE -[#darkred]-> SUPABASE
+ETS -[#darkred]-> SUPABASE
+MENU_AUTO_UPDATE -[#darkred]-> SUPABASE
+
+' AI-Powered Functions (Purple)
+RECIPE -[#purple,thickness=2]-> GENAI
+MENU_AUTO_UPDATE -[#purple,thickness=2]-> GENAI
+
+' Daily Menu Scraping (Orange)
+MENU_AUTO_UPDATE -[#orange,thickness=2]-> KAIST_WEBSITE : Daily Cron Job
+
+' Notes for Clarity
+note right of UI
+  **UI Service:**
+  - Runs frontend & backend.
+  - Primary entry point for Client.
+  - Forwards all API calls to Auth.
+end note
+
+note left of AUTH
+  **Auth Service:**
+  - Handles authentication via Supabase.
+  - Acts as API gateway for other services.
+  - Both UI & Auth are externally exposed.
+end note
+
+note "All services run as Docker containers on the same host." as HostNote
+HostNote .down. AUTH
+
+@enduml

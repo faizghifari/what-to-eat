@@ -49,6 +49,8 @@ services:
   profile-service:
     build:
       context: ./services/profile
+    env_file:
+      - ./services/profile/.env
     networks:
       - what-to-eat-network
 

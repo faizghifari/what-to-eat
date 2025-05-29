@@ -120,6 +120,31 @@ async def get_field(uuid: str, field: Field, client: Client) -> Response:
             logger.info("No database hits")
             return Response(content="No DB hits.", status_code=204)
 
+        # Special handling for tools and ingredients fields
+        if field in [Field.Tools, Field.Ingredients] and data[0][field.value]:
+            try:
+                # First try parsing as-is in case it's already proper JSON
+                try:
+                    parsed_value = from_json(data[0][field.value])
+                except Exception:
+                    # If that fails, try fixing common string representation issues
+                    value = data[0][field.value]
+                    # Handle both single and double quotes
+                    if value.startswith("'") and value.endswith("'"):
+                        value = value[1:-1]  # Strip outer quotes
+                    value = value.replace("'", '"')  # Replace inner quotes
+                    parsed_value = from_json(value)
+                
+                # Ensure the value is a list
+                if not isinstance(parsed_value, list):
+                    parsed_value = [parsed_value] if parsed_value else []
+                
+                data[0][field.value] = parsed_value
+            except Exception as err:
+                logger.error(f"Failed to parse {field.value}: {err}")
+                # Return empty list if parsing fails
+                data[0][field.value] = []
+
         logger.info("Request successful.")
         return Response(content=to_json(data[0]), status_code=200)
 

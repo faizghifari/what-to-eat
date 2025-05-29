@@ -1,3 +1,4 @@
+import json
 from flask import (
     Flask,
     render_template,
@@ -173,10 +174,43 @@ def recipe_detail(id):
         return redirect(url_for("recipe_home"))
 
 
-@app.route("/tools-ingredients")
+@app.route("/tools-ingredients", methods=["GET", "POST"])
 @login_required
 def tools_ingredients():
-    return render_template("tools_ingredients.html")
+    if request.method == "POST":
+        try:
+            data = request.get_json()
+            if "tools" in data:
+                APIClient.update_tools(data["tools"])
+            if "ingredients" in data:
+                APIClient.update_ingredients(data["ingredients"])
+            return jsonify({"success": True})
+        except Exception as e:
+            return jsonify({"error": str(e)}), 400
+
+    try:
+        # profile = APIClient.get_profile()
+        tools = APIClient.get_tools()
+        ingredients = APIClient.get_ingredients()
+
+        if type(tools["available_tools"]) == str:
+            tools["available_tools"] = tools["available_tools"].replace("\'", "\"")
+            tools["available_tools"] = json.loads(tools["available_tools"])
+        if type(ingredients["available_ingredients"]) == str:
+            tools["available_ingredients"] = tools["available_ingredients"].replace(
+                "\'", "\""
+            )
+            ingredients["available_ingredients"] = json.loads(
+                ingredients["available_ingredients"]
+            )
+        return render_template(
+            "tools_ingredients.html",
+            tools=tools.get("available_tools", []),
+            ingredients=ingredients.get("available_ingredients", []),
+        )
+    except Exception as e:
+        flash(f"Failed to load tools and ingredients {str(e)}")
+        return redirect(url_for("food_home"))
 
 
 @app.route("/preferences-restrictions", methods=["GET", "POST"])

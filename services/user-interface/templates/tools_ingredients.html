@@ -5,7 +5,7 @@
     <div class="row mb-4">
         <div class="col">
             <h2>Tools & Ingredients</h2>
-            <p class="text-muted">Manage your available kitchen tools and ingredients</p>
+            <p class="text-muted">Manage your tools and ingredients</p>
         </div>
     </div>
 
@@ -13,31 +13,29 @@
         <div class="col-md-6 mb-4">
             <div class="card">
                 <div class="card-body">
-                    <h3 class="card-title mb-4">Kitchen Tools</h3>
-                    <form class="row g-2 mb-3" method="post" action="{{ url_for('add_tool') }}">
-                        <div class="col-5">
-                            <input type="text" class="form-control" name="name" placeholder="Tool name" required>
-                        </div>
-                        <div class="col-5">
-                            <input type="text" class="form-control" name="desc" placeholder="Description">
-                        </div>
-                        <div class="col-2">
-                            <button class="btn btn-outline-primary w-100" type="submit">Add</button>
-                        </div>
-                    </form>
-
-                    <div class="tools-list">
-                        {% for tool in user.available_tools %}
-                        <form method="post" action="{{ url_for('remove_tool', name=tool.name) }}" class="d-flex justify-content-between align-items-center mb-2">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="tool-{{ loop.index }}" value="{{ tool.name }}">
-                                <label class="form-check-label" for="tool-{{ loop.index }}">
-                                    {{ tool.name }}
-                                    {% if tool.description %}<span class="text-muted small">- {{ tool.description }}</span>{% endif %}
-                                </label>
+                    <h3 class="card-title mb-4">Available Tools</h3>
+                    <div class="row g-2 mb-3">
+                        <div class="col-10">
+                            <div class="mb-2">
+                                <input type="text" class="form-control" id="tool-name" placeholder="Tool name" required>
                             </div>
-                            <button class="btn btn-sm btn-outline-danger" type="submit">Remove</button>
-                        </form>
+                            <div>
+                                <input type="text" class="form-control" id="tool-desc" placeholder="Description">
+                            </div>
+                        </div>
+                        <div class="col-2 d-flex align-items-start">
+                            <button class="btn btn-outline-primary w-100 h-100" onclick="addTools()">Add</button>
+                        </div>
+                    </div>
+                    <div id="tools-list" class="tools-section">
+                        {% for tool in tools %}
+                        <div class="d-flex justify-content-between align-items-center mb-2" data-name="{{ tool.name }}" data-desc="{{ tool.description }}">
+                            <span>
+                                {{ tool.name }}
+                                {% if tool.description %}<span class="text-muted small">- {{ tool.description }}</span>{% endif %}
+                            </span>
+                            <button class="btn btn-sm btn-outline-danger ml-4" onclick="removeTool('{{ tool.name }}')">Remove</button>
+                        </div>
                         {% endfor %}
                     </div>
                 </div>
@@ -48,30 +46,28 @@
             <div class="card">
                 <div class="card-body">
                     <h3 class="card-title mb-4">Available Ingredients</h3>
-                    <form class="row g-2 mb-3" method="post" action="{{ url_for('add_ingredient') }}">
-                        <div class="col-5">
-                            <input type="text" class="form-control" name="name" placeholder="Ingredient name" required>
-                        </div>
-                        <div class="col-5">
-                            <input type="text" class="form-control" name="desc" placeholder="Description">
-                        </div>
-                        <div class="col-2">
-                            <button class="btn btn-outline-primary w-100" type="submit">Add</button>
-                        </div>
-                    </form>
-
-                    <div class="ingredients-list">
-                        {% for ingredient in user.available_ingredients %}
-                        <form method="post" action="{{ url_for('remove_ingredient', name=ingredient.name) }}" class="d-flex justify-content-between align-items-center mb-2">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="ingredient-{{ loop.index }}" value="{{ ingredient.name }}">
-                                <label class="form-check-label" for="ingredient-{{ loop.index }}">
-                                    {{ ingredient.name }}
-                                    {% if ingredient.description %}<span class="text-muted small">- {{ ingredient.description }}</span>{% endif %}
-                                </label>
+                    <div class="row g-2 mb-3">
+                        <div class="col-10">
+                            <div class="mb-2">
+                                <input type="text" class="form-control" id="ingredients-name" placeholder="Ingredients name" required>
                             </div>
-                            <button class="btn btn-sm btn-outline-danger" type="submit">Remove</button>
-                        </form>
+                            <div>
+                                <input type="text" class="form-control" id="ingredients-desc" placeholder="Description">
+                            </div>
+                        </div>
+                        <div class="col-2 d-flex align-items-start">
+                            <button class="btn btn-outline-primary w-100 h-100" onclick="addIngredients()">Add</button>
+                        </div>
+                    </div>
+                    <div id="ingredients-list" class="tools-section">
+                        {% for ingredient in ingredients %}
+                        <div class="d-flex justify-content-between align-items-center mb-2" data-name="{{ ingredient.name }}" data-desc="{{ ingredient.description }}">
+                            <span>
+                                {{ ingredient.name }}
+                                {% if ingredient.description %}<span class="text-muted small">- {{ ingredient.description }}</span>{% endif %}
+                            </span>
+                            <button class="btn btn-sm btn-outline-danger" onclick="removeIngredient('{{ ingredient.name }}')">Remove</button>
+                        </div>
                         {% endfor %}
                     </div>
                 </div>
@@ -82,26 +78,96 @@
     <div class="row">
         <div class="col">
             <div class="d-flex justify-content-end gap-2">
-                <button class="btn btn-secondary">Reset All</button>
-                <button class="btn btn-primary">Save Changes</button>
+                <button class="btn btn-primary" onclick="saveChanges()">Save Changes</button>
             </div>
         </div>
     </div>
 </div>
 
-{% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Category filter functionality
-    const categoryButtons = document.querySelectorAll('.ingredients-categories button');
-    categoryButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            categoryButtons.forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
-            // TODO: Implement filtering logic
-        });
+let tools = {{ tools|tojson|safe }};
+let ingredients = {{ ingredients|tojson|safe }};
+
+function addTools() {
+    const name = document.getElementById('tool-name').value;
+    const desc = document.getElementById('tool-desc').value;
+    if (!name) return;
+
+    tools = tools.filter(p => p.name !== name);
+    tools.push({ name, description: desc });
+    updateToolsList();
+    document.getElementById('tool-name').value = '';
+    document.getElementById('tool-desc').value = '';
+}
+
+function removeTool(name) {
+    tools = tools.filter(p => p.name !== name);
+    updateToolsList();
+}
+
+function addIngredients() {
+    const name = document.getElementById('ingredients-name').value;
+    const desc = document.getElementById('ingredients-desc').value;
+    if (!name) return;
+
+    ingredients = ingredients.filter(r => r.name !== name);
+    ingredients.push({ name, description: desc });
+    updateIngredientsList();
+    document.getElementById('ingredients-name').value = '';
+    document.getElementById('ingredients-desc').value = '';
+}
+
+function removeIngredient(name) {
+    ingredients = ingredients.filter(r => r.name !== name);
+    updateIngredientsList();
+}
+
+function updateToolsList() {
+    const list = document.getElementById('tools-list');
+    list.innerHTML = tools.map(tool => `                        <div class="d-flex justify-content-between mb-2">
+                            <div>
+                                <div class="fw-medium">${tool.name}</div>
+                                ${tool.description ? `<div class="text-muted small">${tool.description}</div>` : ''}
+                            </div>
+                            <button class="btn btn-sm btn-outline-danger ms-3" onclick="removeTool('${tool.name}')">Remove</button>
+                        </div>
+    `).join('');
+}
+
+function updateIngredientsList() {
+    const list = document.getElementById('ingredients-list');
+    list.innerHTML = ingredients.map(ingredient => `                        <div class="d-flex justify-content-between mb-2">
+                            <div>
+                                <div class="fw-medium">${ingredient.name}</div>
+                                ${ingredient.description ? `<div class="text-muted small">${ingredient.description}</div>` : ''}
+                            </div>
+                            <button class="btn btn-sm btn-outline-danger ms-3" onclick="removeIngredient('${ingredient.name}')">Remove</button>
+                        </div>
+    `).join('');
+}
+
+function saveChanges() {
+    fetch('{{ url_for("tools_ingredients") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            tools: tools,
+            ingredients: ingredients
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Changes saved successfully!');
+        } else {
+            alert('Error saving changes: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error saving changes: ' + error);
     });
-});
+}
 </script>
-{% endblock %}
 {% endblock %}

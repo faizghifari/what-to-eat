@@ -29,5 +29,5 @@ RUN crontab /app/crontab.txt
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Start cron in the background and tail the log so output is visible and the log file is created if missing
-CMD ["/bin/bash", "-c", "cron && mkdir -p /app/logs && touch /app/logs/cron.log && tail -F /app/logs/cron.log"]
+# Start cron in the foreground and ensure logs directory exists
+CMD ["bash", "-c", "mkdir -p /app/logs && touch /app/logs/cron.log && cron -f"]

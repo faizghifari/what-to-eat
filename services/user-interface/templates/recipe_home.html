@@ -6,7 +6,8 @@
         <div class="col">
             <h3>Recommended Recipes</h3>
             <div class="row">
-                {% for recipe in recipes %}
+                {% if recipes.results %}
+                {% for recipe in recipes.results %}
                 <div class="col-md-4 mb-4">
                     <div class="card recipe-card">
                         <img src="{{ recipe.image_url }}" class="card-img-top" alt="Recipe">
@@ -24,6 +25,12 @@
                     </div>
                 </div>
                 {% endfor %}
+                {% else %}
+                <div class="col-12 text-center py-5">
+                    <p class="text-muted">No recipes found matching your preferences.</p>
+                    <button type="button" class="btn btn-primary" onclick="showSearchModal()">Search Internet Recipes</button>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -53,16 +60,22 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.querySelector('.search-bar input');
     let timeoutId;
 
-    searchInput.addEventListener('input', function() {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => {
-            if (searchInput.value.trim()) {
-                const modal = new bootstrap.Modal(document.getElementById('searchRecipeModal'));
-                modal.show();
-            }
-        }, 1000);
-    });
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                if (searchInput.value.trim()) {
+                    showSearchModal();
+                }
+            }, 1000);
+        });
+    }
 });
+
+function showSearchModal() {
+    const modal = new bootstrap.Modal(document.getElementById('searchRecipeModal'));
+    modal.show();
+}
 </script>
 {% endblock %}
 {% endblock %}

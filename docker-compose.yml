@@ -69,12 +69,18 @@ services:
       - recipe-service
       - ets-service
       - profile-service
-    command: flask run --host=0.0.0 --port=5000 --reload
-  # menu-auto_update-service:
-  #   build:
-  #     context: ./services/menu-auto_update
-  #   networks:
-  #     - what-to-eat-network
+    command: flask run --host=0.0.0.0 --port=5000 --reload
+
+  menu-auto_update-service:
+    build:
+      context: ./services/menu-auto_update
+      dockerfile: Dockerfile
+    env_file:
+      - ./services/menu-auto_update/.env
+    volumes:
+      - ./services/menu-auto_update:/app
+    networks:
+      - what-to-eat-network
 
 networks:
   what-to-eat-network:
